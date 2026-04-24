@@ -1,5 +1,6 @@
 package com.ifeanyi.UserService.entity;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import lombok.Data;
@@ -15,9 +16,12 @@ public class User {
     private String username;
     private String password;
     private String name;
+    @JsonProperty("img_url")
     private String imgUrl;
 
+    @JsonProperty("create_at")
     private Date createdAt;
+    @JsonProperty("updated_at")
     private Date updatedAt;
 
 }
