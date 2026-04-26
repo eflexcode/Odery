@@ -12,6 +12,8 @@ public class ProductModel {
     private String productName;
     @JsonProperty("user_id")
     private String userId;
+    @JsonProperty("category_id")
+    private String categoryId;
     @JsonProperty("product_description")
     private String productDescription;
     @JsonProperty("product_img_url")

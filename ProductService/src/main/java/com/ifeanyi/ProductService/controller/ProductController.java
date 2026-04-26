@@ -50,7 +50,7 @@ public class ProductController {
         return productService.findByUserId(userId, pageable);
     }
 
-    @GetMapping("available/{")
+    @GetMapping("available")
     @ResponseStatus(HttpStatus.OK)
     public Page<Product> getByInStockBetween( @PathVariable(name = "max") int max, Pageable pageable) {
         return productService.findByInStockBetween(1, max, pageable);

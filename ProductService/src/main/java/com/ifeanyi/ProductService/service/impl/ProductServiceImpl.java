@@ -4,6 +4,7 @@ import com.ifeanyi.ProductService.entity.Product;
 import com.ifeanyi.ProductService.exception.NotFoundExceptionHandler;
 import com.ifeanyi.ProductService.model.ProductModel;
 import com.ifeanyi.ProductService.repository.ProductRepository;
+import com.ifeanyi.ProductService.service.CategoryService;
 import com.ifeanyi.ProductService.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
@@ -19,11 +20,15 @@ import java.util.Optional;
 public class ProductServiceImpl implements ProductService {
 
     private final ProductRepository repository;
+    private final CategoryService categoryService;
 
     @Override
-    public Product create(ProductModel productModel) {
+    public Product create(ProductModel productModel) throws NotFoundExceptionHandler {
+
+        categoryService.get(productModel.getCategoryId());
 
         Product product = new Product();
+
         BeanUtils.copyProperties(productModel,product);
         Date date = new Date();
         product.setCreatedAt(date);

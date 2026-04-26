@@ -13,6 +13,8 @@ public class Product {
 
     @Id
     private String id;
+    @JsonProperty("category_id")
+    private String categoryId;
     @JsonProperty("product_name")
     private String productName;
     @JsonProperty("user_id")

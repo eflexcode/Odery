@@ -10,7 +10,7 @@ import java.util.Optional;
 
 public interface ProductService {
 
-    Product create(ProductModel productModel);
+    Product create(ProductModel productModel) throws NotFoundExceptionHandler;
     Product update(String id,ProductModel productModel) throws NotFoundExceptionHandler;
     Product get(String id) throws NotFoundExceptionHandler;
     Page<Product> getAll(Pageable pageable);
