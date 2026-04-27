@@ -3,6 +3,7 @@ package com.ifeanyi.ProductService.service.impl;
 import com.ifeanyi.ProductService.entity.Product;
 import com.ifeanyi.ProductService.exception.NotFoundExceptionHandler;
 import com.ifeanyi.ProductService.model.ProductModel;
+import com.ifeanyi.ProductService.model.StandardResponse;
 import com.ifeanyi.ProductService.repository.ProductRepository;
 import com.ifeanyi.ProductService.service.CategoryService;
 import com.ifeanyi.ProductService.service.ProductService;
@@ -29,7 +30,7 @@ public class ProductServiceImpl implements ProductService {
 
         Product product = new Product();
 
-        BeanUtils.copyProperties(productModel,product);
+        BeanUtils.copyProperties(productModel, product);
         Date date = new Date();
         product.setCreatedAt(date);
         product.setUpdatedAt(date);
@@ -38,10 +39,10 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public Product update(String id,ProductModel productModel) throws NotFoundExceptionHandler {
+    public Product update(String id, ProductModel productModel) throws NotFoundExceptionHandler {
 
         Product product = get(id);
-        BeanUtils.copyProperties(productModel,product);
+        BeanUtils.copyProperties(productModel, product);
         product.setUpdatedAt(new Date());
 
         return repository.save(product);
@@ -49,7 +50,13 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public Product get(String id) throws NotFoundExceptionHandler {
-        return repository.findById(id).orElseThrow(()-> new NotFoundExceptionHandler("No product found with id: "+id));
+        return repository.findById(id).orElseThrow(() -> new NotFoundExceptionHandler("No product found with id: " + id));
+    }
+
+    @Override
+    public StandardResponse delete(String id) {
+        repository.deleteById(id);
+        return new StandardResponse("Product deleted successfully", 200, new Date());
     }
 
     @Override
@@ -59,12 +66,12 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public Page<Product> findByProductNameContaining(String productName, Pageable pageable) {
-        return repository.findByProductNameContaining(productName,pageable);
+        return repository.findByProductNameContaining(productName, pageable);
     }
 
     @Override
-    public Page<Product> findByUserId(String userId,Pageable pageable) {
-        return repository.findByUserId(userId,pageable);
+    public Page<Product> findByUserId(String userId, Pageable pageable) {
+        return repository.findByUserId(userId, pageable);
     }
 
     @Override
