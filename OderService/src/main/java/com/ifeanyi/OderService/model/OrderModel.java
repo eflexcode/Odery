@@ -1,26 +1,20 @@
-package com.ifeanyi.OderService.entity;
+package com.ifeanyi.OderService.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.ifeanyi.OderService.entity.OrderStatus;
 import lombok.Data;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.Date;
 
-@Document
 @Data
-public class Oder {
+public class OrderModel {
 
-    @Id
-    private String id;
     @JsonProperty("product_id")
     private String productId;
-    @JsonProperty("user_id")
-    private String userId;
     @JsonProperty("description")
     private String description;
     @JsonProperty("status")
-    private OderStatus status;
+    private OrderStatus status;
     @JsonProperty("created_at")
     private Date createdAt;
     @JsonProperty("updated_at")

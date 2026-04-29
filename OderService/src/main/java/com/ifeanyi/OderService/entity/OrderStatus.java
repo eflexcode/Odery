@@ -1,6 +1,6 @@
 package com.ifeanyi.OderService.entity;
 
-public enum OderStatus {
+public enum OrderStatus {
 
     SUBMITTED,
     PROCESSING,
