@@ -2,6 +2,7 @@ package com.ifeanyi.OderService.service.impl;
 
 import com.ifeanyi.OderService.Repository.OrderRepository;
 import com.ifeanyi.OderService.entity.Order;
+import com.ifeanyi.OderService.entity.OrderStatus;
 import com.ifeanyi.OderService.exception.NotFoundException;
 import com.ifeanyi.OderService.model.OrderModel;
 import com.ifeanyi.OderService.service.OrderService;
@@ -25,6 +26,7 @@ public class OrderServiceImpl implements OrderService {
         Order order = new Order();
 
         BeanUtils.copyProperties(orderModel, order);
+        order.setStatus(OrderStatus.SUBMITTED);
 
         Date date = new Date();
         order.setCreatedAt(date);
@@ -58,3 +60,4 @@ public class OrderServiceImpl implements OrderService {
     }
 
 }
+
