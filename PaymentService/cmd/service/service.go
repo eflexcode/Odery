@@ -1,7 +1,7 @@
 package service
 
 import (
-	
+	"github.com/cmd/database"
 	"github.com/gin-gonic/gin"
 )
 
@@ -14,7 +14,7 @@ type card struct{
 	UpdatedAt string `json:"updated_at"`
 }
 
-func AddCard (c *gin.Context)  {
+func (database *database.DatabaseRep) AddCard (c *gin.Context)  {
 	
 }
 
