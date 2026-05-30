@@ -10,7 +10,7 @@ import (
 )
 
 type DatabaseRep struct{
-	db *mongo.Client
+	Mongo *mongo.Client
 }
 
 func ConnDatabase(config config.DatabaseConfig,ctx context.Context)(*mongo.Client,error){

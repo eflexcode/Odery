@@ -33,9 +33,15 @@ func main() {
 		log.Printf("error connecting to mongodb aborting....")
 		return
 	}
+
 	dbRep := database.DatabaseRep{
-		mongoC
+		Mongo: mongoClient,
 	}
+	
+	s := service.Repo{
+		Database: &dbRep,
+	}
+		
 	r := gin.Default()
 
 	r.GET("/ping", func(ctx *gin.Context) {
@@ -44,10 +50,10 @@ func main() {
 		})
 	})
 
-	r.POST("/add-card", service.AddCard)
-	r.PUT("/update-card", service.UpdateCard)
-	r.DELETE("/delete-card", service.DeleteCard)
-	r.GET("/info/{id}", service.GetCardInfo)
+	r.POST("/add-card", s.AddCard)
+	r.PUT("/update-card", s.UpdateCard)
+	r.DELETE("/delete-card", s.DeleteCard)
+	r.GET("/info/{id}", s.GetCardInfo)
 
 	r.Run(evn.GetString("PORT", ":8089"))
 
