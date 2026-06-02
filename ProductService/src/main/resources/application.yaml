@@ -1,3 +1,7 @@
 spring:
   application:
     name: ProductService
+data:
+  mongo:
+    database:
+      uri: mongodb://localhost:27017/OderyProduct

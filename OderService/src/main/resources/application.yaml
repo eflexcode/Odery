@@ -1,3 +1,8 @@
 spring:
   application:
     name: OderService
+  rabbitmq:
+  host: localhost
+  port: 5672
+  username: username
+  password: password
