@@ -15,7 +15,7 @@ import (
 
 func main() {
 
-	if err := godotenv.Load(); err != nil {
+	if err := evn.LoadEvn(); err != nil {
 		log.Printf("error loading evn file aborting....")
 		return
 	}
@@ -52,7 +52,7 @@ func main() {
 
 	r.POST("/add-card", s.AddCard)
 	r.PUT("/update-card", s.UpdateCard)
-	r.DELETE("/delete-card", s.DeleteCard)
+	r.DELETE("/delete-card/{user_id}", s.DeleteCard)
 	r.GET("/info/{id}", s.GetCardInfo)
 
 	r.Run(evn.GetString("PORT", ":8089"))

@@ -7,12 +7,12 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func LoadEcv() error{
+func LoadEvn() error{
 	err:= godotenv.Load()
 	return  err
 }
 
-func  GetString(key,fallback string) string{
+func GetString(key,fallback string) string {
 	value := os.Getenv(key)
 	if value == ""{
 		return fallback
