@@ -19,8 +19,7 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public Binding binding(Queue queue, Exchange exchange)
-    {
+    public Binding binding(Queue queue, Exchange exchange) {
         return BindingBuilder.bind(queue)
                 .to(exchange)
                 .with("order-routing-key")

@@ -2,9 +2,9 @@ package service
 
 import (
 	"context"
-	"evn"
 	"net/http"
 
+	"github.com/cmd/config"
 	"github.com/cmd/database"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -15,15 +15,18 @@ type Card struct {
 	UserId    string `json:"userId"`
 	Pan       string `json:"pan"`
 	Cvv       int    `json:"cvv"`
+	Balance   int    `json:"balance"`
 	Exp       string `json:"exp"`
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"updated_at"`
 }
+
 type CardUpdate struct {
-	UserId    string `json:"userId"`
-	Pan       string `json:"pan"`
-	Cvv       int    `json:"cvv"`
-	Exp       string `json:"exp"`
+	Id     string `json:"id"`
+	UserId string `json:"userId"`
+	Pan    string `json:"pan"`
+	Cvv    int    `json:"cvv"`
+	Exp    string `json:"exp"`
 }
 
 type StandardResponse struct {
@@ -31,12 +34,35 @@ type StandardResponse struct {
 	Status  int    `json:"status"`
 }
 
+type Payment struct {
+	Id        string `json:"id"`
+	CardId    string `json:"card_id"`
+	Amount    int    `json:"amount"`
+	ProductId string `json:"product_id"`
+	OrderId   string `json:"order_id"`
+	Status    string `json:"status"` //done, processing, submitted
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
+}
+
+type Order struct {
+	Id          string `json:"id"`
+	CardId      string `json:"card_id"`
+	Amount      int    `json:"amount"`
+	Description int    `json:"description"`
+	ProductId   string `json:"product_id"`
+	OrderId     string `json:"order_id"`
+	Status      string `json:"status"` //done, processing, submitted
+	CreatedAt   string `json:"created_at"`
+	UpdatedAt   string `json:"updated_at"`
+}
+
 type Repo struct {
 	Database *database.DatabaseRep
 }
 
-var dbname = evn.GetString("DATABASE_NAME")
-var collectionName = evn.GetString("COLLECTION_NAME")
+// var dbname = evn.GetString("DATABASE_NAME")
+// var collectionName = evn.GetString("COLLECTION_NAME")
 
 func (r *Repo) AddCard(c *gin.Context) {
 
@@ -57,6 +83,7 @@ func (r *Repo) AddCard(c *gin.Context) {
 	_, err := ordery.InsertOne(context.TODO(), card)
 
 	if err != nil {
+
 		s := StandardResponse{
 			Message: "Internal server error",
 			Status:  http.StatusInternalServerError,
@@ -75,20 +102,66 @@ func (r *Repo) AddCard(c *gin.Context) {
 }
 
 func (r *Repo) UpdateCard(c *gin.Context) {
-	
-	ordery := r.Database.Mongo.Database(dbname).Collection(collectionName)
-	
+
+	var cardUp CardUpdate
+
+	if err := c.ShouldBindJSON(cardUp); err != nil {
+
+		s := StandardResponse{
+			Message: "Bad request",
+			Status:  http.StatusBadRequest,
+		}
+
+		c.JSON(http.StatusBadRequest, s)
+		return
+	}
+
+	ordery := r.Database.Mongo.Database(config.Dbname).Collection(config.CollectionName)
+
+	// filter := bson.M{"userId": cardUp.UserId}
+
+	update := bson.D{
+		{Key: "$set", Value: bson.D{
+			{Key: "pan", Value: cardUp.Pan},
+			{Key: "exp", Value: cardUp.Exp},
+			{Key: "cvv", Value: cardUp.Cvv},
+		}},
+	}
+
+	id, _ := bson.ObjectIDFromHex(cardUp.Id)
+
+	_, err := ordery.UpdateByID(c.Copy(), id, update)
+
+	if err != nil {
+
+		s := StandardResponse{
+			Message: "Internal server error",
+			Status:  http.StatusInternalServerError,
+		}
+
+		c.JSON(http.StatusInternalServerError, s)
+		return
+	}
+
+	s := StandardResponse{
+		Message: "Card updated sucefuly",
+		Status:  http.StatusOK,
+	}
+
+	c.JSON(http.StatusOK, s)
+
 }
 
 func (r *Repo) DeleteCard(c *gin.Context) {
 
-	ordery := r.Database.Mongo.Database(dbname).Collection(collectionName)
+	ordery := r.Database.Mongo.Database(config.Dbname).Collection(config.CollectionName)
 	userId := c.Param("userId")
 	filter := bson.M{"userId": userId}
 
 	_, err := ordery.DeleteOne(c.Copy(), filter)
 
 	if err != nil {
+
 		s := StandardResponse{
 			Message: "Internal server error",
 			Status:  http.StatusInternalServerError,
@@ -109,7 +182,7 @@ func (r *Repo) DeleteCard(c *gin.Context) {
 
 func (r *Repo) GetCardInfo(c *gin.Context) {
 
-	ordery := r.Database.Mongo.Database(dbname).Collection(collectionName)
+	ordery := r.Database.Mongo.Database(config.Dbname).Collection(config.CollectionName)
 	userId := c.Param("userId")
 	filter := bson.M{"userId": userId}
 
@@ -118,7 +191,7 @@ func (r *Repo) GetCardInfo(c *gin.Context) {
 	result := ordery.FindOne(c.Copy(), filter)
 
 	if err := result.Decode(&card); err != nil {
-		
+
 		s := StandardResponse{
 			Message: "Internal server error",
 			Status:  http.StatusInternalServerError,
@@ -127,7 +200,11 @@ func (r *Repo) GetCardInfo(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, s)
 		return
 	}
-	
+
 	c.JSON(http.StatusInternalServerError, result)
+
+}
+
+func (r *Repo) MakePayment(c *gin.Context) {
 
 }
