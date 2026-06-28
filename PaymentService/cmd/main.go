@@ -22,7 +22,7 @@ func main() {
 		return
 	}
 
-	var cxt = context.Background()
+	// var cxt = context.Background()
 
 	dbConfig := config.DatabaseConfig{
 		ConnUrl:      evn.GetString("DB_URL", "mongodb://localhost/5432"),

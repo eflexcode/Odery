@@ -11,8 +11,8 @@ type DatabaseConfig struct{
 	MaxIdealTime int
 }
 
-var Dbname = evn.GetString("DATABASE_NAME")
-var CollectionName = evn.GetString("COLLECTION_NAME")
+var Dbname string = evn.GetString("DATABASE_NAME")
+var CollectionName string = evn.GetString("COLLECTION_NAME")
 
 
 

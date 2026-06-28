@@ -2,7 +2,9 @@ package service
 
 import (
 	"context"
+	"log"
 	"net/http"
+	"time"
 
 	"github.com/cmd/config"
 	"github.com/cmd/database"
@@ -206,5 +208,59 @@ func (r *Repo) GetCardInfo(c *gin.Context) {
 }
 
 func (r *Repo) MakePayment(c *gin.Context) {
+
+	var order Order
+
+	err := c.ShouldBindBodyWithJSON(order)
+
+	if err != nil {
+		s := StandardResponse{
+			Message: "Bad request",
+			Status:  http.StatusBadRequest,
+		}
+
+		c.JSON(http.StatusBadRequest, s)
+		return
+	}
+
+	ordery := r.Database.Mongo.Database(config.Dbname).Collection(config.CollectionName)
+	filter := bson.M{"cardId": order.CardId}
+	result := ordery.FindOne(context.Background(), filter)
+
+	var card Card
+	err = result.Decode(&order)
+
+	if err != nil {
+		log.Print("error decoding json")
+		s := StandardResponse{
+			Message: "Internal server error",
+			Status:  500,
+		}
+		
+		c.JSON(http.StatusInternalServerError, s)
+		
+		return
+	}
+
+	if card.Balance > 0 && card.Balance > order.Amount {
+
+		p := Payment{
+			CardId:    card.Id,
+			Amount:    order.Amount,
+			OrderId:   order.OrderId,
+			ProductId: order.ProductId,
+			Status:    "done",
+			CreatedAt: time.Now().String(),
+			UpdatedAt: time.Now().String(),
+		}
+
+		_, err := ordery.InsertOne(context.TODO(), p)
+
+		if err != nil {
+			log.Print("error inserting payment info")
+		}
+
+		c.JSON(http.StatusCreated, p)
+	}
 
 }
