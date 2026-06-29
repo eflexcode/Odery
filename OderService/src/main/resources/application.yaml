@@ -6,3 +6,5 @@ spring:
   port: 5672
   username: username
   password: password
+server:
+  port: 8091

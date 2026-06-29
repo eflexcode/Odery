@@ -5,3 +5,5 @@ data:
   mongo:
     database:
       uri: mongodb://localhost:27017/OderyProduct
+server:
+  port: 8092
