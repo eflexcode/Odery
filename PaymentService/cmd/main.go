@@ -39,11 +39,19 @@ func main() {
 	}
 
 	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
-	message.FailOnError(err, "Failed to connect to RabbitMQ")
+
+	if err != nil {
+		message.FailOnError(err, "Failed to connect to RabbitMQ")
+	}
+
 	defer conn.Close()
 
 	ch, err := conn.Channel()
-	message.FailOnError(err, "Failed to open a channel")
+
+	if err != nil {
+		message.FailOnError(err, "Failed to open a channel")
+	}
+
 	defer ch.Close()
 
 	q, err := ch.QueueDeclare(
