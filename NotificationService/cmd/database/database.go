@@ -24,11 +24,14 @@ func ConnectDatabase(ctx context.Context, connUrl string) (*mongo.Client, error)
 	return cli, err
 }
 
-func InsertNotification(){
+func InsertNotification(ctx context.Context,mClient *mongo.Client,notification entity.Notification) {
+	coll := mClient.Database(env.GetString("DATABASE_NAME", "OrderyNotifications")).Collection(env.GetString("COLLECTION_NAME", "Notifications"))
+
+	
 	
 }
 
-func GetNotificationsPagination(ctx context.Context, mClient *mongo.Client, userId string, page, limit int64) ([]entity.Notification, error) {
+func GetNotificationsPagination(ctx context.Context, mClient *mongo.Client, userId string, page, limit int64) (*entity.NotificationResult, error) {
 
 	coll := mClient.Database(env.GetString("DATABASE_NAME", "OrderyNotifications")).Collection(env.GetString("COLLECTION_NAME", "Notifications"))
 
@@ -55,15 +58,49 @@ func GetNotificationsPagination(ctx context.Context, mClient *mongo.Client, user
 	ops := options.Find().SetSort(sortFilter).SetSkip(offset).SetLimit(limit)
 
 	cursur, err := coll.Find(context.Background(), queryFilter, ops)
-	
-	if err  != nil{
-		return nil,err
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer cursur.Close(ctx)
+
+	var notification []entity.Notification
+
+	if err := cursur.All(ctx, &notification); err != nil {
+		return nil, err
+	}
+
+	nResult := entity.NotificationResult{
+		Notifications: notification,
+		Total:         totalCount,
+		Page:          page,
+		Limit:         limit,
+	}
+
+	return &nResult, nil
+}
+
+func GetNotification(ctx context.Context, id string, mClient *mongo.Client) (*entity.Notification, error) {
+
+	coll := mClient.Database(env.GetString("DATABASE_NAME", "OrderyNotifications")).Collection(env.GetString("COLLECTION_NAME", "Notifications"))
+
+	filter := bson.M{"id": id}
+
+	cursor, err := coll.Find(ctx, filter)
+
+	defer cursor.Close(ctx)
+
+	var notification entity.Notification
+
+	if err != nil {
+		return nil, err
+	}
+
+	if err := cursor.Decode(notification); err != nil {
+		return nil, err
 	}
 	
-	defer cursur.Close(ctx)
-	
-	var notification []entity.Notification 
-	
-	
-	
+	return &notification,nil
+
 }

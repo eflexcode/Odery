@@ -8,8 +8,20 @@ type Payload struct {
 }
 
 type Notification struct {
-	Id        string `json:"id"`
-	UserId    string `json:"user_id"`
-	Total     int64  `json:"total"`
-	CreatedAt string `json:"created_at"`
+	Id        string  `json:"id"`
+	UserId    string  `json:"user_id"`
+	Payload   Payload `json:"payload"`
+	CreatedAt string  `json:"created_at"`
+}
+
+type NotificationResult struct {
+	Notifications []Notification `json:"notifications"`
+	Total         int64          `json:"total"`
+	Page          int64          `json:"page"`
+	Limit         int64          `json:"limit"`
+}
+
+type StandardResponse struct{
+	Message string  `json:"message"`
+	StatusCode int `json:"status_code"`
 }
