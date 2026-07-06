@@ -23,14 +23,14 @@ func main() {
 	log.Print("MongoDb connection established")
 
 	dbRepo := database.Repo{
-		databaseMongo: mCli,
+		DatabaseMongo: mCli,
 	}
 	
 	s := service.Repo{
-		db: &dbRepo,
+		Db: &dbRepo,
 	}
 
 	r.GET("/get-notifications/:userId", s.GetNotifications)
-	r.GET("/get/:id")
+	r.GET("/get/:id",s.GetNotification)
 
 }
