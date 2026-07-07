@@ -1,5 +1,6 @@
 package com.ifeanyi.UserService.service.impl;
 
+import com.ifeanyi.UserService.entity.Role;
 import com.ifeanyi.UserService.entity.User;
 import com.ifeanyi.UserService.exception.NotFoundException;
 import com.ifeanyi.UserService.model.UserModel;
@@ -25,6 +26,19 @@ public class UserServiceImpl implements UserService {
         BeanUtils.copyProperties(userModel, user);
         user.setCreatedAt(new Date());
         user.setUpdatedAt(new Date());
+        user.setRole(Role.USER);
+
+        return userRepository.save(user);
+    }
+
+    @Override
+    public User insertAdmin(UserModel userModel) {
+
+        User user = new User();
+        BeanUtils.copyProperties(userModel, user);
+        user.setCreatedAt(new Date());
+        user.setUpdatedAt(new Date());
+        user.setRole(Role.ADMIN);
 
         return userRepository.save(user);
     }

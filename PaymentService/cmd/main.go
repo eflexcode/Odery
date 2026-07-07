@@ -55,7 +55,7 @@ func main() {
 	defer ch.Close()
 
 	q, err := ch.QueueDeclare(
-		"hello", // name
+		"payment", // name
 		true,    // durability
 		false,   // delete when unused
 		false,   // exclusive

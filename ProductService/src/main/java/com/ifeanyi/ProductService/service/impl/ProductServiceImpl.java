@@ -35,7 +35,9 @@ public class ProductServiceImpl implements ProductService {
         product.setCreatedAt(date);
         product.setUpdatedAt(date);
 
-        return repository.save(product);
+        Product  savedProduct = repository.save(product);
+
+        return savedProduct;
     }
 
     @Override

@@ -24,11 +24,12 @@ func ConnectDatabase(ctx context.Context, connUrl string) (*mongo.Client, error)
 	return cli, err
 }
 
-func InsertNotification(ctx context.Context,mClient *mongo.Client,notification entity.Notification) {
+func InsertNotification(ctx context.Context, mClient *mongo.Client, notification entity.Notification) error {
 	coll := mClient.Database(env.GetString("DATABASE_NAME", "OrderyNotifications")).Collection(env.GetString("COLLECTION_NAME", "Notifications"))
 
-	
-	
+	_, err := coll.InsertOne(ctx, notification)
+
+	return err
 }
 
 func GetNotificationsPagination(ctx context.Context, mClient *mongo.Client, userId string, page, limit int64) (*entity.NotificationResult, error) {
@@ -53,7 +54,7 @@ func GetNotificationsPagination(ctx context.Context, mClient *mongo.Client, user
 		return nil, err
 	}
 
-	sortFilter := bson.D{{key: "created_at", Value: -1}}
+	sortFilter := bson.D{{Key: "created_at", Value: -1}}
 
 	ops := options.Find().SetSort(sortFilter).SetSkip(offset).SetLimit(limit)
 
@@ -89,7 +90,7 @@ func GetNotification(ctx context.Context, id string, mClient *mongo.Client) (*en
 
 	cursor, err := coll.Find(ctx, filter)
 
-	defer cursor.Close(ctx)
+	// defer cursor.Close(ctx)
 
 	var notification entity.Notification
 
@@ -100,7 +101,7 @@ func GetNotification(ctx context.Context, id string, mClient *mongo.Client) (*en
 	if err := cursor.Decode(notification); err != nil {
 		return nil, err
 	}
-	
-	return &notification,nil
+
+	return &notification, nil
 
 }

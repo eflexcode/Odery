@@ -7,6 +7,7 @@ import com.ifeanyi.UserService.model.UserModel;
 public interface UserService {
 
     User insert(UserModel userModel);
+    User insertAdmin(UserModel userModel);
 
     User update(UserModel userModel,String id) throws NotFoundException;
 

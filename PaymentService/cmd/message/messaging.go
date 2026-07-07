@@ -71,7 +71,7 @@ func Consume(ch *amqp.Channel) {
 		for mg := range msgs {
 
 			if err := json.Unmarshal(mg.Body, order); err != nil {
-				log.Print("uu")
+				log.Print("error unwraping json")
 				return
 			}
 
