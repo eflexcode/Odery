@@ -22,16 +22,19 @@ public class ProductController {
     private final ProductService productService;
 
     @PostMapping("create")
+    @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity<Product> create(@RequestBody ProductModel productModel) throws NotFoundExceptionHandler {
         return new ResponseEntity<>(productService.create(productModel), HttpStatus.CREATED);
     }
 
     @GetMapping("{id}")
+    @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<Product> get(@PathVariable String id) throws NotFoundExceptionHandler {
         return new ResponseEntity<>(productService.get(id), HttpStatus.OK);
     }
 
     @PutMapping("update/{id}")
+    @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<Product> update(@PathVariable String id, @RequestBody ProductModel productModel) throws NotFoundExceptionHandler {
         return new ResponseEntity<>(productService.update(id, productModel), HttpStatus.OK);
     }
@@ -61,6 +64,7 @@ public class ProductController {
     }
 
     @DeleteMapping("delete")
+    @ResponseStatus(HttpStatus.OK)
     public StandardResponse delete(String id) {
         return productService.delete(id);
     }

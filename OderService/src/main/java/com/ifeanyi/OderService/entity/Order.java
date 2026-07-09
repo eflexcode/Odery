@@ -15,6 +15,8 @@ public class Order {
     private String id;
     @JsonProperty("product_id")
     private String productId;
+    @JsonProperty("count")
+    private int count;
     @JsonProperty("amount")
     private int amount;
     @JsonProperty("user_id")

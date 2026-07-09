@@ -11,6 +11,8 @@ public class OrderModel {
 
     @JsonProperty("product_id")
     private String productId;
+    @JsonProperty("count")
+    private int count;
     @JsonProperty("description")
     private String description;
     @JsonProperty("status")

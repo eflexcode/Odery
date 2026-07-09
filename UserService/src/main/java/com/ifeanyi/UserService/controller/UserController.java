@@ -21,6 +21,10 @@ public class UserController {
     public ResponseEntity<User> create(@RequestBody UserModel userModel) {
         return new ResponseEntity<User>(userService.insert(userModel), HttpStatus.CREATED);
     }
+    @PostMapping("create/adim")
+    public ResponseEntity<User> createAdmin(@RequestBody UserModel userModel) {
+        return new ResponseEntity<User>(userService.insert(userModel), HttpStatus.CREATED);
+    }
 
     @PutMapping("update/{id}")
     public ResponseEntity<User> update(@RequestBody UserModel userModel, @PathVariable String id) throws NotFoundException {
