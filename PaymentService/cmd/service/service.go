@@ -43,6 +43,7 @@ type Payment struct {
 	ProductId string `json:"product_id"`
 	OrderId   string `json:"order_id"`
 	Status    string `json:"status"` //done, processing, submitted
+	Type      string `json:"type"`   //refund,paid
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"updated_at"`
 }
@@ -50,11 +51,12 @@ type Payment struct {
 type Order struct {
 	Id          string `json:"id"`
 	CardId      string `json:"card_id"`
+	Count       int    `json:"count"`
 	Amount      int    `json:"amount"`
 	Description int    `json:"description"`
 	ProductId   string `json:"product_id"`
 	OrderId     string `json:"order_id"`
-	Status      string `json:"status"` //done, processing, submitted
+	Status      string `json:"status"` //done, processing, submitted, canceled
 	CreatedAt   string `json:"created_at"`
 	UpdatedAt   string `json:"updated_at"`
 }
@@ -207,7 +209,7 @@ func (r *Repo) GetCardInfo(c *gin.Context) {
 
 }
 
-func (r *Repo) MakePayment(c *gin.Context) {
+func (r *Repo) MakePayment(c *gin.Context) { //  call product to get price
 
 	var order Order
 
@@ -236,9 +238,9 @@ func (r *Repo) MakePayment(c *gin.Context) {
 			Message: "Internal server error",
 			Status:  500,
 		}
-		
+
 		c.JSON(http.StatusInternalServerError, s)
-		
+
 		return
 	}
 

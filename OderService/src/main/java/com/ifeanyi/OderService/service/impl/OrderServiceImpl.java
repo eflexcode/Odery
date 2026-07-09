@@ -4,16 +4,24 @@ import com.ifeanyi.OderService.Messaging.OrderMessagingProducer;
 import com.ifeanyi.OderService.Repository.OrderRepository;
 import com.ifeanyi.OderService.entity.Order;
 import com.ifeanyi.OderService.entity.OrderStatus;
+import com.ifeanyi.OderService.exception.BadRequestException;
 import com.ifeanyi.OderService.exception.NotFoundException;
 import com.ifeanyi.OderService.model.OrderModel;
 import com.ifeanyi.OderService.service.OrderService;
+import com.ifeanyi.OderService.service.OtherService.model.Product;
+import com.ifeanyi.OderService.util.Util;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.result.method.annotation.ResponseEntityExceptionHandler;
+import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Instant;
+import java.time.InstantSource;
 import java.util.Date;
 
 @Service
@@ -25,14 +33,22 @@ public class OrderServiceImpl implements OrderService {
     private final RestTemplate restTemplate;
 
     @Override
-    public Order create(OrderModel orderModel) {
+    public Order create(OrderModel orderModel) throws BadRequestException {
 
         Order order = new Order();
 
         //call product to validate product id
 
+        Product product = validateProduct(orderModel.getProductId());
+
+        if (product == null) {
+            throw new BadRequestException("invalid product id");
+        }
+
         BeanUtils.copyProperties(orderModel, order);
         order.setStatus(OrderStatus.SUBMITTED);// changed to done on message received from RabbitMQ
+        int amount = product.getPrice() * orderModel.getCount();
+        order.setAmount(amount);
 
         Date date = new Date();
         order.setCreatedAt(date);
@@ -40,7 +56,7 @@ public class OrderServiceImpl implements OrderService {
 
         Order savedOrder = repository.save(order);
 
-        messagingProducer.sendMessage(savedOrder.toString());
+        messagingProducer.sendMessage(savedOrder.toString());// rebbitmq message
 
         return repository.save(savedOrder);
     }
@@ -53,10 +69,31 @@ public class OrderServiceImpl implements OrderService {
         BeanUtils.copyProperties(orderModel, order);
 
         Date date = new Date();
-        order.setCreatedAt(date);
         order.setUpdatedAt(date);
 
         return repository.save(order);
+    }
+
+    @Override
+    public Order cancel(String id) throws NotFoundException {
+        Order order = getById(id);
+
+        int twoDays = 60 * 60 * 24 * 2;
+        Date dateTwoDaysFromOrderPlaced = new Date(order.getCreatedAt().getTime() + twoDays);
+
+        if (order.getCreatedAt().after(dateTwoDaysFromOrderPlaced)) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT,"Cannot cancel order after 3 days");
+        }
+
+        order.setStatus(OrderStatus.CANCELED);
+        Date date = new Date();
+        order.setUpdatedAt(date);
+
+        Order savedOrder = repository.save(order);
+
+        messagingProducer.sendMessage(savedOrder.toString());// rebbitmq message
+
+        return repository.save(savedOrder);
     }
 
     @Override
@@ -69,8 +106,28 @@ public class OrderServiceImpl implements OrderService {
         return repository.findById(id).orElseThrow(() -> new NotFoundException("no order found with id: " + id));
     }
 
-    public boolean validateProduct(String productId){
-        restTemplate.exchange()
+    public Product validateProduct(String productId) {
+        String endpoint = "" + productId;
+        HttpHeaders httpHeaders = new HttpHeaders();
+
+        HttpEntity<Product> httpEntity = new HttpEntity<>(httpHeaders);
+        ResponseEntity<Product> responseEntity = restTemplate.exchange(Util.ProductServiceBaseUrl + endpoint, HttpMethod.GET, httpEntity, Product.class);
+
+        if (responseEntity.getStatusCode() != HttpStatus.OK) {
+            return null;
+        }
+
+        if (responseEntity.getBody() == null) {
+            return null;
+        }
+
+        return responseEntity.getBody();
+
+//        String gottenId = responseEntity.getBody().getId();
+//        if (gottenId.equals(productId)) {
+//            return false;
+//        }
+//        return true;
     }
 
 }

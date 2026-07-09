@@ -17,5 +17,10 @@ public class GlobalException {
         return new ResponseEntity<>(new StandardResp("Not found",HttpStatus.NOT_FOUND.value(),new Date()), HttpStatus.NOT_FOUND);
     }
 
+    @ExceptionHandler(BadRequestException.class)
+    public  ResponseEntity<StandardResp> badRequest(BadRequestException exception){
+        return new ResponseEntity<>(new StandardResp("Bad request",HttpStatus.BAD_REQUEST.value(),new Date()), HttpStatus.BAD_REQUEST);
+    }
+
 }
 
