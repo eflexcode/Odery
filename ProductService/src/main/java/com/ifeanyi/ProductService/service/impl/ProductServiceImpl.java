@@ -7,11 +7,15 @@ import com.ifeanyi.ProductService.model.StandardResponse;
 import com.ifeanyi.ProductService.repository.ProductRepository;
 import com.ifeanyi.ProductService.service.CategoryService;
 import com.ifeanyi.ProductService.service.ProductService;
+import com.ifeanyi.ProductService.service.impl.OtherServices.model.User;
+import com.ifeanyi.ProductService.util.Util;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.Date;
 import java.util.Optional;
@@ -23,19 +27,26 @@ public class ProductServiceImpl implements ProductService {
     private final ProductRepository repository;
     private final CategoryService categoryService;
 
+    private final RestTemplate restTemplate;
+
     @Override
     public Product create(ProductModel productModel) throws NotFoundExceptionHandler {
 
         categoryService.get(productModel.getCategoryId());
+        User user = getUserFromUserService(productModel.getUserId());
+
+        if (user != null && user.getId().equals(productModel.getUserId())){
+
+        }
 
         Product product = new Product();
-
+        //TODO check if user is an admin
         BeanUtils.copyProperties(productModel, product);
         Date date = new Date();
         product.setCreatedAt(date);
         product.setUpdatedAt(date);
 
-        Product  savedProduct = repository.save(product);
+        Product savedProduct = repository.save(product);
 
         return savedProduct;
     }
@@ -79,6 +90,16 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public Page<Product> findByInStockBetween(int minZero, int max, Pageable pageable) {
         return repository.findByInStockBetween(minZero, max, pageable);
+    }
+
+    public User getUserFromUserService(String id) {
+        String endpoint = "" + id;
+
+        ResponseEntity<User> userResponseEntity = restTemplate.getForEntity(Util.USER_SERVICE_BASE_URL + endpoint, User.class);
+        if (userResponseEntity.getStatusCode() != HttpStatus.OK) {
+            return null;
+        }
+        return userResponseEntity.getBody();
     }
 
 }

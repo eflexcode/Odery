@@ -1,26 +1,32 @@
 package com.ifeanyi.UserService.entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.Data;
 
 import java.util.Date;
 
 @Data
-@Entity
+@Entity(name = "users")
 public class User {
 
     @Id
-    private Integer id;
+    @JsonProperty("id")
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private String id;
+    @JsonProperty("username")
+    @Column(unique = true)
     private String username;
+    @JsonProperty("password")
     private String password;
+    @JsonProperty("role")
     private Role role;
+    @JsonProperty("name")
     private String name;
     @JsonProperty("img_url")
     private String imgUrl;
 
-    @JsonProperty("create_at")
+    @JsonProperty("created_at")
     private Date createdAt;
     @JsonProperty("updated_at")
     private Date updatedAt;
