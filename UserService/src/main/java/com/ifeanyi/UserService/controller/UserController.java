@@ -21,12 +21,13 @@ public class UserController {
     public ResponseEntity<User> create(@RequestBody UserModel userModel) {
         return new ResponseEntity<User>(userService.insert(userModel), HttpStatus.CREATED);
     }
-    @PostMapping("create/adim")
+
+    @PostMapping("create/admin")
     public ResponseEntity<User> createAdmin(@RequestBody UserModel userModel) {
-        return new ResponseEntity<User>(userService.insert(userModel), HttpStatus.CREATED);
+        return new ResponseEntity<User>(userService.insertAdmin(userModel), HttpStatus.CREATED);
     }
 
-    @PutMapping("update/{id}")
+    @PutMapping("{id}")
     public ResponseEntity<User> update(@RequestBody UserModel userModel, @PathVariable String id) throws NotFoundException {
         return new ResponseEntity<>(userService.update(userModel, id), HttpStatus.OK);
     }

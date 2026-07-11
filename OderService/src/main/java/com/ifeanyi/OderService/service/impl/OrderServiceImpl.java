@@ -56,7 +56,7 @@ public class OrderServiceImpl implements OrderService {
 
         Order savedOrder = repository.save(order);
 
-        messagingProducer.sendMessage(savedOrder.toString());// rebbitmq message
+        messagingProducer.sendMessage(savedOrder.toString());// rabbitmq message
 
         return repository.save(savedOrder);
     }
@@ -91,7 +91,7 @@ public class OrderServiceImpl implements OrderService {
 
         Order savedOrder = repository.save(order);
 
-        messagingProducer.sendMessage(savedOrder.toString());// rebbitmq message
+        messagingProducer.sendMessage(savedOrder.toString());// rabbitmq message
 
         return repository.save(savedOrder);
     }

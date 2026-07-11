@@ -1,6 +1,7 @@
 package com.ifeanyi.OderService.controller;
 
 import com.ifeanyi.OderService.entity.Order;
+import com.ifeanyi.OderService.exception.BadRequestException;
 import com.ifeanyi.OderService.exception.NotFoundException;
 import com.ifeanyi.OderService.model.OrderModel;
 import com.ifeanyi.OderService.service.OrderService;
@@ -19,7 +20,7 @@ public class OrderController {
     private final OrderService orderService;
 
     @PostMapping("create")
-    public ResponseEntity<Order> create(@RequestBody OrderModel orderModel) {
+    public ResponseEntity<Order> create(@RequestBody OrderModel orderModel) throws BadRequestException {
         return new ResponseEntity<>(orderService.create(orderModel), HttpStatus.CREATED);
     }
 

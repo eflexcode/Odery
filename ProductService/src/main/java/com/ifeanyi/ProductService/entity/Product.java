@@ -26,7 +26,7 @@ public class Product {
     @JsonProperty("price")
     private int price;
     @JsonProperty("in_stock")
-    private int inStock;
+    private int inStock; //TODO once payment succeed reduced count on receive from message queue
     @JsonProperty("create_at")
     private Date createdAt;
     @JsonProperty("updated_at")
