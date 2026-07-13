@@ -7,6 +7,7 @@ import com.ifeanyi.ProductService.model.StandardResponse;
 import com.ifeanyi.ProductService.repository.ProductRepository;
 import com.ifeanyi.ProductService.service.CategoryService;
 import com.ifeanyi.ProductService.service.ProductService;
+import com.ifeanyi.ProductService.service.impl.OtherServices.model.Role;
 import com.ifeanyi.ProductService.service.impl.OtherServices.model.User;
 import com.ifeanyi.ProductService.util.Util;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +17,16 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Date;
 import java.util.Optional;
 
@@ -30,18 +40,25 @@ public class ProductServiceImpl implements ProductService {
     private final RestTemplate restTemplate;
 
     @Override
-    public Product create(ProductModel productModel) throws NotFoundExceptionHandler {
+    public Product create(MultipartFile file_img, ProductModel productModel) throws NotFoundExceptionHandler, IOException {
 
         categoryService.get(productModel.getCategoryId());
         User user = getUserFromUserService(productModel.getUserId());
 
-        if (user != null && user.getId().equals(productModel.getUserId())){
-
+        if (user == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User id is no valid");
         }
 
+        if (user.getRole() != Role.ADMIN) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User role cannot perform this activity");
+        }
+
+        //upload file s3 or disk save
+        String imageDownloadUrl = uploadSlashSaveFile(file_img);
+
         Product product = new Product();
-        //TODO check if user is an admin
         BeanUtils.copyProperties(productModel, product);
+        product.setProductImgUrl(imageDownloadUrl);
         Date date = new Date();
         product.setCreatedAt(date);
         product.setUpdatedAt(date);
@@ -92,6 +109,14 @@ public class ProductServiceImpl implements ProductService {
         return repository.findByInStockBetween(minZero, max, pageable);
     }
 
+    @Override
+    public byte[] getProductImg(String fileName) throws IOException {
+        //for s3
+        //byte[] bytes = s3.getObject(GetObjectRequest.builder().bucket(buketName).key(key).build()).readAllBytes();
+
+        return Files.readAllBytes(Path.of(Util.FILE_DIR + fileName));
+    }
+
     public User getUserFromUserService(String id) {
         String endpoint = "" + id;
 
@@ -101,5 +126,24 @@ public class ProductServiceImpl implements ProductService {
         }
         return userResponseEntity.getBody();
     }
+
+    public String uploadSlashSaveFile(MultipartFile img_file) throws IOException {
+
+        String fileName = System.currentTimeMillis() + img_file.getOriginalFilename();
+        File file = new File(Util.FILE_DIR + fileName);
+
+        img_file.transferTo(file);
+        //        for aws s3
+//        s3.putObject(PutObjectRequest.builder()
+//                        .bucket(buketName)
+//                        .key(key)
+//                        .acl("public-read")
+//                        .build(),
+//                RequestBody.fromBytes(file.getBytes()));
+//        downloadUrl = Util.endpoint + "/" + buketName + "/" + key;
+
+        return "http://localhost:8092/img/" + fileName;
+    }
+
 
 }
