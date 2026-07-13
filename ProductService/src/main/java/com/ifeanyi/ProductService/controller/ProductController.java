@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Date;
 
@@ -23,8 +24,8 @@ public class ProductController {
 
     @PostMapping("create")
     @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<Product> create(@RequestBody ProductModel productModel) throws NotFoundExceptionHandler {
-        return new ResponseEntity<>(productService.create(productModel), HttpStatus.CREATED);
+    public ResponseEntity<Product> create(@RequestPart MultipartFile file_img, @RequestPart ProductModel productModel) throws NotFoundExceptionHandler {
+        return new ResponseEntity<>(productService.create(file_img,productModel), HttpStatus.CREATED);
     }
 
     @GetMapping("{id}")
@@ -69,4 +70,8 @@ public class ProductController {
         return productService.delete(id);
     }
 
+    @GetMapping("img/{file_name}")
+    public ResponseEntity<byte[]> getProductImage(@PathVariable(name = "file_name") String fileName){
+        return new ResponseEntity<>(productService.getProductImg(fileName),HttpStatus.OK);
+    }
 }

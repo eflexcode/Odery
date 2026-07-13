@@ -11,8 +11,8 @@
           <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.44/lombok-1.18.44.jar" />
         </processorPath>
         <module name="UserService" />
-        <module name="ProductService" />
         <module name="OderService" />
+        <module name="ProductService" />
       </profile>
     </annotationProcessing>
   </component>
