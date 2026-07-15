@@ -10,6 +10,7 @@ import com.ifeanyi.ProductService.service.ProductService;
 import com.ifeanyi.ProductService.service.impl.OtherServices.model.Role;
 import com.ifeanyi.ProductService.service.impl.OtherServices.model.User;
 import com.ifeanyi.ProductService.util.Util;
+import com.ifeanyi.ProductService.service.impl.OtherServices.User.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Page;
@@ -36,14 +37,13 @@ public class ProductServiceImpl implements ProductService {
 
     private final ProductRepository repository;
     private final CategoryService categoryService;
-
-    private final RestTemplate restTemplate;
+    private final UserService userService;
 
     @Override
     public Product create(MultipartFile file_img, ProductModel productModel) throws NotFoundExceptionHandler, IOException {
 
         categoryService.get(productModel.getCategoryId());
-        User user = getUserFromUserService(productModel.getUserId());
+        User user = userService.getUserFromUserService(productModel.getUserId());
 
         if (user == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User id is no valid");
@@ -115,16 +115,6 @@ public class ProductServiceImpl implements ProductService {
         //byte[] bytes = s3.getObject(GetObjectRequest.builder().bucket(buketName).key(key).build()).readAllBytes();
 
         return Files.readAllBytes(Path.of(Util.FILE_DIR + fileName));
-    }
-
-    public User getUserFromUserService(String id) {
-        String endpoint = "" + id;
-
-        ResponseEntity<User> userResponseEntity = restTemplate.getForEntity(Util.USER_SERVICE_BASE_URL + endpoint, User.class);
-        if (userResponseEntity.getStatusCode() != HttpStatus.OK) {
-            return null;
-        }
-        return userResponseEntity.getBody();
     }
 
     public String uploadSlashSaveFile(MultipartFile img_file) throws IOException {

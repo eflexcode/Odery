@@ -16,10 +16,10 @@ public class ProductModel {
     private String categoryId;
     @JsonProperty("product_description")
     private String productDescription;
-    @JsonProperty("product_img_url")
-    private String productImgUrl;
     @JsonProperty("price")
     private int price;
+    @JsonProperty("currency")
+    private String currency;
     @JsonProperty("in_stock")
     private int inStock;
 

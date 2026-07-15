@@ -9,10 +9,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.Date;
 
 @RestController
@@ -24,8 +26,8 @@ public class ProductController {
 
     @PostMapping("create")
     @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<Product> create(@RequestPart MultipartFile file_img, @RequestPart ProductModel productModel) throws NotFoundExceptionHandler {
-        return new ResponseEntity<>(productService.create(file_img,productModel), HttpStatus.CREATED);
+    public ResponseEntity<Product> create(@RequestPart(name = "file_img") MultipartFile fileImg, @RequestPart(name = "product") ProductModel productModel) throws NotFoundExceptionHandler, IOException {
+        return new ResponseEntity<>(productService.create(fileImg,productModel), HttpStatus.CREATED);
     }
 
     @GetMapping("{id}")
@@ -70,8 +72,9 @@ public class ProductController {
         return productService.delete(id);
     }
 
-    @GetMapping("img/{file_name}")
-    public ResponseEntity<byte[]> getProductImage(@PathVariable(name = "file_name") String fileName){
+    @GetMapping(value = "img/{file_name}",produces = MediaType.IMAGE_PNG_VALUE)
+    public ResponseEntity<?> getProductImage(@PathVariable(name = "file_name") String fileName) throws IOException {
         return new ResponseEntity<>(productService.getProductImg(fileName),HttpStatus.OK);
     }
+
 }
