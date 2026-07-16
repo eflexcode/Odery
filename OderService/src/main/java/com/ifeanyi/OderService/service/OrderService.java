@@ -11,7 +11,8 @@ public interface OrderService {
 
     Order create(OrderModel orderModel) throws BadRequestException;
 
-    Order update(OrderModel orderModel,String id) throws NotFoundException;
+    Order update(OrderModel orderModel, String id) throws NotFoundException;
+
     Order cancel(String id) throws NotFoundException;
 
     Page<Order> get(String userId, String productId, Pageable pageable);

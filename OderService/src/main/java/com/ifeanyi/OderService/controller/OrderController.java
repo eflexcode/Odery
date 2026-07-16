@@ -29,15 +29,20 @@ public class OrderController {
         return new ResponseEntity<>(orderService.update(orderModel, id), HttpStatus.OK);
     }
 
-    @GetMapping("get")
+    @GetMapping("get/{user_id}/product_id")
     @ResponseStatus(HttpStatus.OK)
-    public Page<Order> get(@PathVariable String userId, @PathVariable String productId, Pageable pageable) {
+    public Page<Order> get(@PathVariable(name = "user_id") String userId, @PathVariable("product_id") String productId, Pageable pageable) {
         return orderService.get(userId, productId, pageable);
     }
 
-    @GetMapping("getById")
+    @PutMapping("cancel/{id}")
+    public ResponseEntity<Order> cancel(@PathVariable String id) throws NotFoundException {
+        return new ResponseEntity<>(orderService.cancel(id), HttpStatus.OK);
+    }
+
+    @GetMapping("getById/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public Order getById(String id) throws NotFoundException {
+    public Order getById(@PathVariable("id") String id) throws NotFoundException {
         return orderService.getById(id);
     }
 

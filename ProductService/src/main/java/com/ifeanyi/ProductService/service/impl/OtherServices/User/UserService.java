@@ -14,7 +14,6 @@ public class UserService {
 
     public User getUserFromUserService(String id) {
         String endpoint = "" + id;
-
         ResponseEntity<User> userResponseEntity = restTemplate.getForEntity(Util.USER_SERVICE_BASE_URL + endpoint, User.class);
         if (userResponseEntity.getStatusCode() != HttpStatus.OK) {
             return null;

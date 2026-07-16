@@ -11,5 +11,10 @@ public class OrderMessagingConsumer {
         //       Handle the received message here
         System.out.println("Received message: " + message);
     }
+//    @RabbitListener(queues = "payment")
+//    public void receiveMessagePayment(String message){
+//        //       Handle the received message here
+//        System.out.println("Received message: " + message);
+//    }
 
 }

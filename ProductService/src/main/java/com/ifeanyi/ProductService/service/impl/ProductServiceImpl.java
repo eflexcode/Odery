@@ -1,5 +1,6 @@
 package com.ifeanyi.ProductService.service.impl;
 
+import com.ifeanyi.ProductService.entity.Category;
 import com.ifeanyi.ProductService.entity.Product;
 import com.ifeanyi.ProductService.exception.NotFoundExceptionHandler;
 import com.ifeanyi.ProductService.model.ProductModel;
@@ -17,6 +18,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
@@ -40,10 +42,22 @@ public class ProductServiceImpl implements ProductService {
     private final UserService userService;
 
     @Override
-    public Product create(MultipartFile file_img, ProductModel productModel) throws NotFoundExceptionHandler, IOException {
+    public Product create(MultipartFile file_img, ProductModel productModel) throws IOException {
 
-        categoryService.get(productModel.getCategoryId());
-        User user = userService.getUserFromUserService(productModel.getUserId());
+        User user = null;
+        Category category;
+
+        //validations
+        try {
+            category = categoryService.get(productModel.getCategoryId());
+        } catch (NotFoundExceptionHandler e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Invalid category id");
+        }
+        try {
+            user = userService.getUserFromUserService(productModel.getUserId());
+        } catch (HttpClientErrorException httpClientErrorException) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid user id");
+        }
 
         if (user == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User id is no valid");
