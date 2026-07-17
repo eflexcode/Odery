@@ -9,4 +9,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface OrderRepository extends MongoRepository<Order, String> {
     Page<Order> findAllByUserIdOrProductId(String userId, String productId, Pageable pageable);
+
+    Page<Order> findAllByUserId(String userId, Pageable pageable);
 }

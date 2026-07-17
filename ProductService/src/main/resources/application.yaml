@@ -1,9 +1,8 @@
 spring:
   application:
     name: ProductService
-data:
-  mongo:
-    database:
+  data:
+    mongodb:
       uri: mongodb://localhost:27017/OderyProduct
 server:
   port: 8092

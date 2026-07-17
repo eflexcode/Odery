@@ -25,7 +25,7 @@ func main() {
 	// var cxt = context.Background()
 
 	dbConfig := config.DatabaseConfig{
-		ConnUrl:      evn.GetString("DB_URL", "mongodb://localhost/5432"),
+		ConnUrl:      evn.GetString("DB_URL", "mongodb://localhost/27017/OrderyPayment"),
 		MaxOpenTime:  5,
 		MaxIdealConn: 2,
 		MaxIdealTime: 5,
@@ -64,7 +64,7 @@ func main() {
 			amqp.QueueTypeArg: amqp.QueueTypeQuorum,
 		},
 	)
-
+	
 	msgs, err := ch.Consume(
 		q.Name, // queue
 		"",     // consumer

@@ -1,5 +1,6 @@
 package com.ifeanyi.ProductService.service.impl;
 
+import com.ifeanyi.ProductService.entity.Category;
 import com.ifeanyi.ProductService.entity.Product;
 import com.ifeanyi.ProductService.exception.NotFoundExceptionHandler;
 import com.ifeanyi.ProductService.model.ProductModel;
@@ -10,12 +11,14 @@ import com.ifeanyi.ProductService.service.ProductService;
 import com.ifeanyi.ProductService.service.impl.OtherServices.model.Role;
 import com.ifeanyi.ProductService.service.impl.OtherServices.model.User;
 import com.ifeanyi.ProductService.util.Util;
+import com.ifeanyi.ProductService.service.impl.OtherServices.User.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
@@ -36,14 +39,25 @@ public class ProductServiceImpl implements ProductService {
 
     private final ProductRepository repository;
     private final CategoryService categoryService;
-
-    private final RestTemplate restTemplate;
+    private final UserService userService;
 
     @Override
-    public Product create(MultipartFile file_img, ProductModel productModel) throws NotFoundExceptionHandler, IOException {
+    public Product create(MultipartFile file_img, ProductModel productModel) throws IOException {
 
-        categoryService.get(productModel.getCategoryId());
-        User user = getUserFromUserService(productModel.getUserId());
+        User user = null;
+        Category category;
+
+        //validations
+        try {
+            category = categoryService.get(productModel.getCategoryId());
+        } catch (NotFoundExceptionHandler e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Invalid category id");
+        }
+        try {
+            user = userService.getUserFromUserService(productModel.getUserId());
+        } catch (HttpClientErrorException httpClientErrorException) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid user id");
+        }
 
         if (user == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User id is no valid");
@@ -115,16 +129,6 @@ public class ProductServiceImpl implements ProductService {
         //byte[] bytes = s3.getObject(GetObjectRequest.builder().bucket(buketName).key(key).build()).readAllBytes();
 
         return Files.readAllBytes(Path.of(Util.FILE_DIR + fileName));
-    }
-
-    public User getUserFromUserService(String id) {
-        String endpoint = "" + id;
-
-        ResponseEntity<User> userResponseEntity = restTemplate.getForEntity(Util.USER_SERVICE_BASE_URL + endpoint, User.class);
-        if (userResponseEntity.getStatusCode() != HttpStatus.OK) {
-            return null;
-        }
-        return userResponseEntity.getBody();
     }
 
     public String uploadSlashSaveFile(MultipartFile img_file) throws IOException {

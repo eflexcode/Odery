@@ -11,15 +11,11 @@ public class OrderModel {
 
     @JsonProperty("product_id")
     private String productId;
+    @JsonProperty("user_id")
+    private String userId;
     @JsonProperty("count")
     private int count;
     @JsonProperty("description")
     private String description;
-    @JsonProperty("status")
-    private OrderStatus status;
-    @JsonProperty("created_at")
-    private Date createdAt;
-    @JsonProperty("updated_at")
-    private Date updatedAt;
 
 }

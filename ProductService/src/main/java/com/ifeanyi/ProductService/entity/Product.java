@@ -7,7 +7,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.Date;
 
-@Document("Products")
+@Document("products")
 @Data
 public class Product {
 
@@ -25,6 +25,8 @@ public class Product {
     private String productImgUrl;
     @JsonProperty("price")
     private int price;
+    @JsonProperty("currency")
+    private String currency;
     @JsonProperty("in_stock")
     private int inStock; //TODO once payment succeed reduced count on receive from message queue
     @JsonProperty("create_at")

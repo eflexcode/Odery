@@ -13,7 +13,7 @@ public class OrderMessagingProducer {
 
     public void sendMessage(String message) {
         rabbitTemplate.convertAndSend(
-                "post-order", "order-routing-key", message);
+                "exchange-order", "order-routing-key", message);
     }
 
 }

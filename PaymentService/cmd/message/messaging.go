@@ -122,7 +122,7 @@ func Consume(ch *amqp.Channel) {
 						DeliveryMode: amqp.Persistent,
 					})
 
-			}
+			}//publish payment failed
 
 		}
 

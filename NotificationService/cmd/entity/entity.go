@@ -6,7 +6,7 @@ type Payload struct {
 	Intent  string `json:"intent"`
 	ImgUrl  string `json:"imgUrl"`
 }
-
+// add  Notification type
 type Notification struct {
 	Id        string  `json:"id"`
 	UserId    string  `json:"user_id"`

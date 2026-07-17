@@ -16,8 +16,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.reactive.result.method.annotation.ResponseEntityExceptionHandler;
+//import org.springframework.web.reactive.result.method.annotation.ResponseEntityExceptionHandler;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
@@ -36,13 +37,17 @@ public class OrderServiceImpl implements OrderService {
     public Order create(OrderModel orderModel) throws BadRequestException {
 
         Order order = new Order();
+        Product product;
 
         //call product to validate product id
-
-        Product product = validateProduct(orderModel.getProductId());
+        try {
+            product = validateProduct(orderModel.getProductId());
+        } catch (HttpClientErrorException httpClientErrorException) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid product id");
+        }
 
         if (product == null) {
-            throw new BadRequestException("invalid product id");
+            throw new BadRequestException("Invalid product id");
         }
 
         BeanUtils.copyProperties(orderModel, order);
@@ -58,7 +63,7 @@ public class OrderServiceImpl implements OrderService {
 
         messagingProducer.sendMessage(savedOrder.toString());// rabbitmq message
 
-        return repository.save(savedOrder);
+        return order;
     }
 
     @Override
@@ -82,7 +87,7 @@ public class OrderServiceImpl implements OrderService {
         Date dateTwoDaysFromOrderPlaced = new Date(order.getCreatedAt().getTime() + twoDays);
 
         if (order.getCreatedAt().after(dateTwoDaysFromOrderPlaced)) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT,"Cannot cancel order after 3 days");
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Cannot cancel order after 2 days");
         }
 
         order.setStatus(OrderStatus.CANCELED);
@@ -98,7 +103,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public Page<Order> get(String userId, String productId, Pageable pageable) {
-        return repository.findAllByUserIdOrProductId(userId, productId, pageable);
+        return repository.findAllByUserId(userId, pageable);
     }
 
     @Override

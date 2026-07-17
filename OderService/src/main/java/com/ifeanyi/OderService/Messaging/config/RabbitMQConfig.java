@@ -8,13 +8,12 @@ import org.springframework.context.annotation.Configuration;
 public class RabbitMQConfig {
 
     @Bean
-    public Queue queue()
-    {
+    public Queue queue() {
         return new Queue("order", false);
     }
 
-    @Bean public Exchange exchange()
-    {
+    @Bean
+    public Exchange exchange() {
         return new DirectExchange("exchange-order");
     }
 

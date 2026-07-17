@@ -7,11 +7,11 @@ spring:
       password:
       host: localhost
   application:
-    name: OderService
+    name: OrderService
   rabbitmq:
   host: localhost
   port: 5672
-  username: username
-  password: password
+  username: guest
+  password: guest
 server:
   port: 8091
