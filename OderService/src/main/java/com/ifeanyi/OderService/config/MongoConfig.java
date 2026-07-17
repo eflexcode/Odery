@@ -8,6 +8,7 @@ import org.springframework.data.mongodb.config.AbstractMongoClientConfiguration;
 
 @Configuration
 public class MongoConfig extends AbstractMongoClientConfiguration {
+
     @Override
     protected String getDatabaseName() {
         return Util.DatabaseName;
@@ -17,4 +18,5 @@ public class MongoConfig extends AbstractMongoClientConfiguration {
     public MongoClient mongoClient() {
         return MongoClients.create(Util.MongoDBUrl);
     }
+
 }

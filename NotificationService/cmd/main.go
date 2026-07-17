@@ -6,6 +6,7 @@ import (
 
 	"github.com/cmd/database"
 	"github.com/cmd/service"
+	"github.com/env"
 	"github.com/gin-gonic/gin"
 	"github.com/rabbitmq/amqp091-go"
 )
@@ -14,7 +15,7 @@ func main() {
 
 	r := gin.Default()
 
-	mCli, err := database.ConnectDatabase(context.Background(), "http://localhost:54321")
+	mCli, err := database.ConnectDatabase(context.Background(), env.GetString("DB_URL", "mongodb://localhost/27017"))
 
 	if err != nil {
 		log.Print("Error connecting to mongodb")
@@ -24,7 +25,7 @@ func main() {
 	log.Print("MongoDb connection established")
 
 	// conn, err := ampq.Dial("amqp://guest:guest@localhost:5672/")
-	conn, err := amqp091.Dial("amqp://guest:guest@localhost:5672/")
+	conn, err := amqp091.Dial(env.GetString("RABBITMQ", "amqp://guest:guest@localhost:5672/"))
 
 	if err != nil {
 		log.Print("Error connecting to rabbitmq")
@@ -43,24 +44,26 @@ func main() {
 	defer chann.Close()
 
 	messages, err := chann.Consume(
-		"order",// queue
-		"", // consumer
-		true,  // durability
-		false, // delete when unused
-		false, // exclusive
+		"order", // queue
+		"",      // consumer
+		true,    // durability
+		false,   // delete when unused
+		false,   // exclusive
 		false,
 		nil)
+
+	if err != nil {
+		log.Print("Rabbitmq Consume error")
+		return
+	}
+	
+	log.Print("Rabbitmq Connection established")
 
 	go func() {
 		for m := range messages {
 			log.Println(m.Body)
 		}
 	}()
-
-	if err != nil {
-		log.Print("Rabbitmq Consume error")
-		return
-	}
 
 	dbRepo := database.Repo{
 		DatabaseMongo: mCli,
@@ -73,4 +76,5 @@ func main() {
 	r.GET("/get-notifications/:userId", s.GetNotifications)
 	r.GET("/get/:id", s.GetNotification)
 
+	r.Run(env.GetString("PORT", ":8084"))
 }

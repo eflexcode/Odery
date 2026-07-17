@@ -29,7 +29,7 @@ public class OrderController {
         return new ResponseEntity<>(orderService.update(orderModel, id), HttpStatus.OK);
     }
 
-    @GetMapping("get/{user_id}/product_id")
+    @GetMapping("get/{user_id}")
     @ResponseStatus(HttpStatus.OK)
     public Page<Order> get(@PathVariable(name = "user_id") String userId, @PathVariable("product_id") String productId, Pageable pageable) {
         return orderService.get(userId, productId, pageable);
