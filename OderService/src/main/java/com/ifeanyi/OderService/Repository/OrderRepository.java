@@ -1,6 +1,7 @@
 package com.ifeanyi.OderService.Repository;
 
 import com.ifeanyi.OderService.entity.Order;
+import com.ifeanyi.OderService.entity.OrderStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
@@ -11,4 +12,5 @@ public interface OrderRepository extends MongoRepository<Order, String> {
     Page<Order> findAllByUserIdOrProductId(String userId, String productId, Pageable pageable);
 
     Page<Order> findAllByUserId(String userId, Pageable pageable);
+    Page<Order> findAllByUserIdAndStatus(String userId, OrderStatus status, Pageable pageable);
 }
