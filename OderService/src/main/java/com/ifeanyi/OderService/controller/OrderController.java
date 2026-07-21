@@ -1,6 +1,7 @@
 package com.ifeanyi.OderService.controller;
 
 import com.ifeanyi.OderService.entity.Order;
+import com.ifeanyi.OderService.entity.OrderStatus;
 import com.ifeanyi.OderService.exception.BadRequestException;
 import com.ifeanyi.OderService.exception.NotFoundException;
 import com.ifeanyi.OderService.model.OrderModel;
@@ -31,8 +32,8 @@ public class OrderController {
 
     @GetMapping("get/{user_id}")
     @ResponseStatus(HttpStatus.OK)
-    public Page<Order> get(@PathVariable(name = "user_id") String userId, @PathVariable("product_id") String productId, Pageable pageable) {
-        return orderService.get(userId, productId, pageable);
+    public Page<Order> get(@PathVariable(name = "user_id") String userId, @RequestParam OrderStatus status, Pageable pageable) {
+        return orderService.get(userId, status, pageable);
     }
 
     @PutMapping("cancel/{id}")

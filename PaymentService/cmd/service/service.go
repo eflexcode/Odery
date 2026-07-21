@@ -19,6 +19,7 @@ type Card struct {
 	Cvv       int    `json:"cvv"`
 	Balance   int    `json:"balance"`
 	Exp       string `json:"exp"`
+	Active    bool   `json:"active"`
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"updated_at"`
 }
@@ -38,24 +39,25 @@ type StandardResponse struct {
 
 type Payment struct {
 	Id        string `json:"id"`
+	UserId    string `json:"user_id"`
 	CardId    string `json:"card_id"`
 	Amount    int    `json:"amount"`
 	ProductId string `json:"product_id"`
 	OrderId   string `json:"order_id"`
-	Status    string `json:"status"` //done, processing, submitted
-	Type      string `json:"type"`   //refund,paid
+	Status    string `json:"status"` //done, processing, submitted, failed
+	Reason    string `json:"reason"` //eg: insufficient funds, card error, network error,
+	Type      string `json:"type"`   //refund,paid,-
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"updated_at"`
 }
 
 type Order struct {
 	Id          string `json:"id"`
-	CardId      string `json:"card_id"`
+	UserId      string `json:"user_id"`
 	Count       int    `json:"count"`
 	Amount      int    `json:"amount"`
 	Description int    `json:"description"`
 	ProductId   string `json:"product_id"`
-	OrderId     string `json:"order_id"`
 	Status      string `json:"status"` //done, processing, submitted, canceled
 	CreatedAt   string `json:"created_at"`
 	UpdatedAt   string `json:"updated_at"`
@@ -226,11 +228,11 @@ func (r *Repo) MakePayment(c *gin.Context) { //  call product to get price
 	}
 
 	ordery := r.Database.Mongo.Database(config.Dbname).Collection(config.CollectionName)
-	filter := bson.M{"cardId": order.CardId}
+	filter := bson.M{"userId": order.UserId}
 	result := ordery.FindOne(context.Background(), filter)
 
 	var card Card
-	err = result.Decode(&order)
+	err = result.Decode(&card)
 
 	if err != nil {
 		log.Print("error decoding json")
@@ -249,9 +251,12 @@ func (r *Repo) MakePayment(c *gin.Context) { //  call product to get price
 		p := Payment{
 			CardId:    card.Id,
 			Amount:    order.Amount,
-			OrderId:   order.OrderId,
+			UserId:    order.UserId,
+			OrderId:   order.Id,
 			ProductId: order.ProductId,
 			Status:    "done",
+			Type:      "paid",
+			Reason:    "",
 			CreatedAt: time.Now().String(),
 			UpdatedAt: time.Now().String(),
 		}

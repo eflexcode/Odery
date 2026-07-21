@@ -76,7 +76,7 @@ func Consume(ch *amqp.Channel) {
 			}
 
 			ordery := mongoClient.Database(config.Dbname).Collection(config.CollectionName)
-			filter := bson.M{"cardId": order.CardId}
+			filter := bson.M{"userId": order.UserId}
 			result := ordery.FindOne(context.Background(), filter)
 
 			var card service.Card
@@ -86,15 +86,26 @@ func Consume(ch *amqp.Channel) {
 				log.Print("error decoding json")
 				return
 			}
+        
 
+			// You can fake both network response and card issues here eg.
+			// refund,paid:{Type}, insufficient funds, card error, network error:{Reason}, done, processing, submitted, failed:{Status}
+			// for fields/types
+			//	Status    string `json:"status"` 
+			//	Reason    string `json:"reason"` 
+			//	Type      string `json:"type"`
+
+			//do something with the else mainly insufficient funds.
 			if card.Balance > 0 && card.Balance > order.Amount {
 
 				p := service.Payment{
 					CardId:    card.Id,
 					Amount:    order.Amount,
-					OrderId:   order.OrderId,
+					OrderId:   order.Id,
 					ProductId: order.ProductId,
 					Status:    "done",
+					Type:      "paid",
+					Reason:    "-",
 					CreatedAt: time.Now().String(),
 					UpdatedAt: time.Now().String(),
 				}
@@ -122,7 +133,19 @@ func Consume(ch *amqp.Channel) {
 						DeliveryMode: amqp.Persistent,
 					})
 
-			}//publish payment failed
+			}else{
+				p := service.Payment{
+					CardId:    card.Id,
+					Amount:    order.Amount,
+					OrderId:   order.Id,
+					ProductId: order.ProductId,
+					Status:    "failed",
+					Type:      "-",
+					Reason:    "insufficient funds",
+					CreatedAt: time.Now().String(),
+					UpdatedAt: time.Now().String(),
+				}
+			} //publish payment failed
 
 		}
 

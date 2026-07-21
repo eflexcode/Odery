@@ -102,7 +102,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public Page<Order> get(String userId, String productId, Pageable pageable) {
+    public Page<Order> get(String userId, OrderStatus status, Pageable pageable) {
         return repository.findAllByUserId(userId, pageable);
     }
 

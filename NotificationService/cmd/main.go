@@ -61,7 +61,7 @@ func main() {
 
 	go func() {
 		for m := range messages {
-			log.Println(m.Body)
+			log.Println("llll"+string(m.Body))
 		}
 	}()
 

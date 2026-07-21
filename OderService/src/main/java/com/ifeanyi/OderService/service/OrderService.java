@@ -1,6 +1,7 @@
 package com.ifeanyi.OderService.service;
 
 import com.ifeanyi.OderService.entity.Order;
+import com.ifeanyi.OderService.entity.OrderStatus;
 import com.ifeanyi.OderService.exception.BadRequestException;
 import com.ifeanyi.OderService.exception.NotFoundException;
 import com.ifeanyi.OderService.model.OrderModel;
@@ -15,7 +16,7 @@ public interface OrderService {
 
     Order cancel(String id) throws NotFoundException;
 
-    Page<Order> get(String userId, String productId, Pageable pageable);
+    Page<Order> get(String userId, OrderStatus status, Pageable pageable);
 
     Order getById(String id) throws NotFoundException;
 
