@@ -9,7 +9,7 @@ public class RabbitMQConfig {
 
     @Bean
     public Queue queue() {
-        return new Queue("order", false);
+        return new Queue("order", true);
     }
 
     @Bean

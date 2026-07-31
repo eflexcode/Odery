@@ -23,8 +23,10 @@ public class Product {
     private String productDescription;
     @JsonProperty("product_img_url")
     private String productImgUrl;
+    @JsonProperty("product_zip_file")
+    private String productZipFile;
     @JsonProperty("price")
-    private int price;
+    private double price;
     @JsonProperty("currency")
     private String currency;
     @JsonProperty("in_stock")

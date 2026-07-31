@@ -17,7 +17,7 @@ public class ProductModel {
     @JsonProperty("product_description")
     private String productDescription;
     @JsonProperty("price")
-    private int price;
+    private double price;
     @JsonProperty("currency")
     private String currency;
     @JsonProperty("in_stock")

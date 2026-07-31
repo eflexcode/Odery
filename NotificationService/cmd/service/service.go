@@ -1,6 +1,8 @@
 package service
 
 import (
+	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -19,6 +21,8 @@ func (r *Repo) GetNotifications(c *gin.Context) {
 	var p = c.Query("page")
 	var l = c.Query("limit")
 
+	log.Println("userId: " + userId + " page: " + p + " limit: " + l)
+
 	page, err := strconv.Atoi(p)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, entity.StandardResponse{Message: "NAN Page", StatusCode: http.StatusBadRequest})
@@ -33,6 +37,7 @@ func (r *Repo) GetNotifications(c *gin.Context) {
 	nResults, err := database.GetNotificationsPagination(c, r.Db.DatabaseMongo, userId, int64(page), int64(limit))
 
 	if err != nil {
+		fmt.Println("Error:: " + err.Error())
 		c.JSON(http.StatusInternalServerError, entity.StandardResponse{Message: "Internal server error", StatusCode: http.StatusInternalServerError})
 		return
 	}
@@ -42,13 +47,15 @@ func (r *Repo) GetNotifications(c *gin.Context) {
 }
 
 func (r *Repo) GetNotification(c *gin.Context) {
-
 	var id = c.Param("id")
 
 	notification, err := database.GetNotification(c, id, r.Db.DatabaseMongo)
+
 	if err != nil {
+		fmt.Println("Error:: " + err.Error())
 		c.JSON(http.StatusInternalServerError, entity.StandardResponse{Message: "Internal server error", StatusCode: http.StatusInternalServerError})
 		return
 	}
+
 	c.JSON(http.StatusOK, notification)
 }

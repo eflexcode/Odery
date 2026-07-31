@@ -1,14 +1,21 @@
 package com.ifeanyi.UserService.controller;
 
+import com.ifeanyi.UserService.entity.Inventory;
 import com.ifeanyi.UserService.entity.User;
 import com.ifeanyi.UserService.exception.NotFoundException;
-import com.ifeanyi.UserService.model.StandardRes;
+import com.ifeanyi.UserService.model.InventoryModel;
 import com.ifeanyi.UserService.model.UserModel;
 import com.ifeanyi.UserService.service.UserService;
+import com.ifeanyi.UserService.service.InventoryService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.BeanUtils;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Date;
 
 @RestController
 @RequiredArgsConstructor
@@ -16,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
 
     private final UserService userService;
+    private final InventoryService inventoryService;
 
     @PostMapping("create")
     public ResponseEntity<User> create(@RequestBody UserModel userModel) {
@@ -39,8 +47,23 @@ public class UserController {
 
     @DeleteMapping("{id}")
     public ResponseEntity<Void> delete(@PathVariable String id) {
-        userService.delete(id);
+        userService.delete(id);//on order service
         return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    @PostMapping("inv/add")
+    public ResponseEntity<Inventory> addInventory(@RequestBody InventoryModel inventoryModel){
+      return new ResponseEntity<>(inventoryService.add(inventoryModel),HttpStatus.OK);
+    }
+
+    @PostMapping("inv/get/{id}")
+    public ResponseEntity<Inventory> getInventory(@PathVariable String id){
+        return new ResponseEntity<>(inventoryService.get(id),HttpStatus.OK);
+    }
+
+    @PostMapping("inv/get-all/{userId}")
+    public ResponseEntity<Page<Inventory>> getAllUserInventory(@PathVariable String userId, Pageable pageable){
+        return new ResponseEntity<>(inventoryService.getAll(userId,pageable),HttpStatus.OK);
     }
 
 }
