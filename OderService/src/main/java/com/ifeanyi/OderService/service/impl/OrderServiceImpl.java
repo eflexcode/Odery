@@ -12,6 +12,7 @@ import com.ifeanyi.OderService.service.OtherService.model.Product;
 import com.ifeanyi.OderService.util.Util;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
+import org.springframework.boot.json.JsonParser;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.*;
@@ -20,6 +21,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 //import org.springframework.web.reactive.result.method.annotation.ResponseEntityExceptionHandler;
 import org.springframework.web.server.ResponseStatusException;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.time.InstantSource;
@@ -61,7 +63,9 @@ public class OrderServiceImpl implements OrderService {
 
         Order savedOrder = repository.save(order);
 
-        messagingProducer.sendMessage(savedOrder.toString());// rabbitmq message
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        messagingProducer.sendMessage("QueueType:Order rabbitmqIfy "+objectMapper.writeValueAsString(savedOrder));// rabbitmq message
 
         return order;
     }
@@ -96,7 +100,9 @@ public class OrderServiceImpl implements OrderService {
 
         Order savedOrder = repository.save(order);
 
-        messagingProducer.sendMessage(savedOrder.toString());// rabbitmq message
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        messagingProducer.sendMessage("QueueType:Order rabbitmqIfy "+objectMapper.writeValueAsString(savedOrder));// rabbitmq message
 
         return repository.save(savedOrder);
     }

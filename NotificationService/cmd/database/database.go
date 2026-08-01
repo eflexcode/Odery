@@ -1,7 +1,10 @@
 package database
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
 
 	"github.com/cmd/entity"
 	"github.com/env"
@@ -46,7 +49,7 @@ func GetNotificationsPagination(ctx context.Context, mClient *mongo.Client, user
 
 	offset := (page - 1) * limit
 
-	queryFilter := bson.M{"userId": userId}
+	queryFilter := bson.M{"userid": userId}
 
 	totalCount, err := coll.CountDocuments(ctx, queryFilter)
 
@@ -54,7 +57,7 @@ func GetNotificationsPagination(ctx context.Context, mClient *mongo.Client, user
 		return nil, err
 	}
 
-	sortFilter := bson.D{{Key: "created_at", Value: -1}}
+	sortFilter := bson.D{{Key: "createdat", Value: -1}}
 
 	ops := options.Find().SetSort(sortFilter).SetSkip(offset).SetLimit(limit)
 
@@ -83,24 +86,34 @@ func GetNotificationsPagination(ctx context.Context, mClient *mongo.Client, user
 }
 
 func GetNotification(ctx context.Context, id string, mClient *mongo.Client) (*entity.Notification, error) {
-
+	println("Id sent: " + id)
 	coll := mClient.Database(env.GetString("DATABASE_NAME", "OrderyNotifications")).Collection(env.GetString("COLLECTION_NAME", "Notifications"))
 
 	filter := bson.M{"id": id}
 
-	cursor, err := coll.Find(ctx, filter)
-
-	// defer cursor.Close(ctx)
+	cursor := coll.FindOne(ctx, filter)
 
 	var notification entity.Notification
 
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	// defer cursor.Close(ctx)
+	r, _ := cursor.Raw()
+	raw := r.String()
+	data := bytes.NewBufferString(raw)
+	fmt.Println("bson raw:: ", r.String())
+
+	err := json.Unmarshal(data.Bytes(), &notification)
 	if err != nil {
-		return nil, err
+		return nil,err
 	}
 
-	if err := cursor.Decode(notification); err != nil {
-		return nil, err
-	}
+	// fmt.Println("bson raw:: ", r.String())
+	// if err := cursor.Decode(notification); err != nil {
+	// 	return nil, err
+	// }
 
 	return &notification, nil
 

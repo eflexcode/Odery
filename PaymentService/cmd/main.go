@@ -42,6 +42,7 @@ func main() {
 
 	if err != nil {
 		message.FailOnError(err, "Failed to connect to RabbitMQ")
+		return
 	}
 
 	defer conn.Close()
@@ -50,36 +51,65 @@ func main() {
 
 	if err != nil {
 		message.FailOnError(err, "Failed to open a channel")
+		return
 	}
 
 	defer ch.Close()
 
-	q, err := ch.QueueDeclare(
+	qu, err := ch.QueueDeclare(
 		"payment", // name
-		true,    // durability
-		false,   // delete when unused
-		false,   // exclusive
-		false,   // no-wait
+		true,      // durability
+		false,     // delete when unused
+		false,     // exclusive
+		false,     // no-wait
 		amqp.Table{
 			amqp.QueueTypeArg: amqp.QueueTypeQuorum,
 		},
 	)
-	
-	msgs, err := ch.Consume(
-		q.Name, // queue
-		"",     // consumer
-		true,   // auto-ack
-		false,  // exclusive
-		false,  // no-local
-		false,  // no-wait
-		nil,    // args
-	)
 
-	go func() {
-		for d := range msgs {
-			log.Printf("Received a message: %s", d.Body)
-		}
-	}()
+	if err != nil {
+		message.FailOnError(err, "Failed to declare a RabbitMq queue")
+		return
+	}
+
+	var paymentExchangeName string = "payment.exchange"
+	// var paymentExchangeKey string = "payment.exchange.key" //not used in fanout tho
+	// var orderQueueName string = "order"
+	var orderExchangeName string = "exchange-order"
+	var orderExchangeKey string = "order-routing-key"
+
+	err = ch.ExchangeDeclare(paymentExchangeName, "fanout", true, false, false, false, nil)
+	if err != nil {
+		message.FailOnError(err, "Declare exchange  failed")
+		return
+	}
+
+	// err = ch.QueueBind(qu.Name, paymentExchangeKey, paymentExchangeName, false, nil) //payement exchange
+	// if err != nil {
+	// 	message.FailOnError(err, "Failed to bind to payment queue ")
+	// } //dont want to see what i published
+
+	err = ch.QueueBind(qu.Name, orderExchangeKey, orderExchangeName, false, nil)
+	if err != nil {
+		message.FailOnError(err, "Failed to bind to payment queue ")
+	}
+
+	message.Consume(ch, mongoClient)
+	// msgs, err := ch.Consume(
+	// 	q.Name, // queue
+	// 	"",     // consumer
+	// 	true,   // auto-ack
+	// 	false,  // exclusive
+	// 	false,  // no-local
+	// 	false,  // no-wait
+	// 	nil,    // args
+	// )
+
+	// go func() {
+	// 	for d := range msgs {
+	// 		log.Printf("Received a message: %s", d.Body)
+	// 	}
+	// }()
 
 	dbRep := database.DatabaseRep{
 		Mongo: mongoClient,
@@ -87,6 +117,7 @@ func main() {
 
 	s := service.Repo{
 		Database: &dbRep,
+		MqChan:   ch,
 	}
 
 	r := gin.Default()
@@ -102,6 +133,8 @@ func main() {
 	r.DELETE("/delete-card/{user_id}", s.DeleteCard)
 	r.GET("/info/{id}", s.GetCardInfo)
 	r.POST("/process-payment", s.MakePayment)
+	r.POST("/request-refund", s.RequestRefund)
+	r.GET("/get-payment-slipts", s.MakePayment)
 
 	r.Run(evn.GetString("PORT", ":8089"))
 

@@ -19,19 +19,14 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Date;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -42,7 +37,7 @@ public class ProductServiceImpl implements ProductService {
     private final UserService userService;
 
     @Override
-    public Product create(MultipartFile file_img, ProductModel productModel) throws IOException {
+    public Product create(MultipartFile file_img, MultipartFile productFile, ProductModel productModel) throws IOException {
 
         User user = null;
         Category category;
@@ -68,11 +63,13 @@ public class ProductServiceImpl implements ProductService {
         }
 
         //upload file s3 or disk save
-        String imageDownloadUrl = uploadSlashSaveFile(file_img);
+        String imageDownloadUrl = uploadSlashSaveFile(file_img,"img");
+        String zipDownloadUrl = uploadSlashSaveFile(productFile,"file");
 
         Product product = new Product();
         BeanUtils.copyProperties(productModel, product);
         product.setProductImgUrl(imageDownloadUrl);
+        product.setProductZipFile(zipDownloadUrl);
         Date date = new Date();
         product.setCreatedAt(date);
         product.setUpdatedAt(date);
@@ -124,19 +121,19 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public byte[] getProductImg(String fileName) throws IOException {
+    public byte[] getProductFile(String fileName) throws IOException {
         //for s3
         //byte[] bytes = s3.getObject(GetObjectRequest.builder().bucket(buketName).key(key).build()).readAllBytes();
 
         return Files.readAllBytes(Path.of(Util.FILE_DIR + fileName));
     }
 
-    public String uploadSlashSaveFile(MultipartFile img_file) throws IOException {
+    public String uploadSlashSaveFile(MultipartFile sentFile,String type) throws IOException {
 
-        String fileName = System.currentTimeMillis() + img_file.getOriginalFilename();
+        String fileName = System.currentTimeMillis() + sentFile.getOriginalFilename();
         File file = new File(Util.FILE_DIR + fileName);
 
-        img_file.transferTo(file);
+        sentFile.transferTo(file);
         //        for aws s3
 //        s3.putObject(PutObjectRequest.builder()
 //                        .bucket(buketName)
@@ -146,7 +143,7 @@ public class ProductServiceImpl implements ProductService {
 //                RequestBody.fromBytes(file.getBytes()));
 //        downloadUrl = Util.endpoint + "/" + buketName + "/" + key;
 
-        return "http://localhost:8092/img/" + fileName;
+        return "http://localhost:8092/"+type +"/"+ fileName;
     }
 
 

@@ -3,7 +3,6 @@ package com.ifeanyi.ProductService.controller;
 import com.ifeanyi.ProductService.entity.Product;
 import com.ifeanyi.ProductService.exception.NotFoundExceptionHandler;
 import com.ifeanyi.ProductService.model.ProductModel;
-import com.ifeanyi.ProductService.model.StandardResponse;
 import com.ifeanyi.ProductService.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -15,7 +14,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.Date;
 
 @RestController
 @RequiredArgsConstructor
@@ -26,8 +24,8 @@ public class ProductController {
 
     @PostMapping("create")
     @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<Product> create(@RequestPart(name = "file_img") MultipartFile fileImg, @RequestPart(name = "product") ProductModel productModel) throws NotFoundExceptionHandler, IOException {
-        return new ResponseEntity<>(productService.create(fileImg,productModel), HttpStatus.CREATED);
+    public ResponseEntity<Product> create(@RequestPart(name = "file_img") MultipartFile fileImg, @RequestPart(name = "product_file") MultipartFile productFile,@RequestPart(name = "product") ProductModel productModel) throws NotFoundExceptionHandler, IOException {
+        return new ResponseEntity<>(productService.create(fileImg,productFile,productModel), HttpStatus.CREATED);
     }
 
     @GetMapping("{id}")
@@ -66,15 +64,20 @@ public class ProductController {
         return productService.findByInStockBetween(1, max, pageable);
     }
 
-    @DeleteMapping("delete")
-    @ResponseStatus(HttpStatus.OK)
-    public StandardResponse delete(String id) {
-        return productService.delete(id);
-    }
+//    @DeleteMapping("delete")
+//    @ResponseStatus(HttpStatus.OK)
+//    public StandardResponse delete(String id) {
+//        return productService.delete(id);
+//    }
 
     @GetMapping(value = "img/{file_name}",produces = MediaType.IMAGE_PNG_VALUE)
     public ResponseEntity<?> getProductImage(@PathVariable(name = "file_name") String fileName) throws IOException {
-        return new ResponseEntity<>(productService.getProductImg(fileName),HttpStatus.OK);
+        return new ResponseEntity<>(productService.getProductFile(fileName),HttpStatus.OK);
+    }
+
+    @GetMapping(value = "file/{file_name}",produces = MediaType.ALL_VALUE)
+    public ResponseEntity<?> getProductZipFile(@PathVariable(name = "file_name") String fileName) throws IOException {
+        return new ResponseEntity<>(productService.getProductFile(fileName),HttpStatus.OK);
     }
 
 }
