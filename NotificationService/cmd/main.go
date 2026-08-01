@@ -49,22 +49,22 @@ func main() {
 
 	defer chann.Close()
 
-	queue, err := chann.QueueDeclare("order-notification", true, false, false, false, nil)
+	queue, err := chann.QueueDeclare("order-notification", true, false, false, false, nil)//notification queue
 
 	if err != nil {
 		log.Print("Failed to declare notification queue")
 		return
 	}
 
-	err = chann.ExchangeDeclare("order-notification.exchange", "direct", true, false, false, false, nil)
+	err = chann.ExchangeDeclare("order-notification.exchange", "fanout", true, false, false, false, nil)
 
 	if err != nil {
-		log.Print("Failed to declare exchange queue")
+		log.Print("Failed to declare exchange queue error::  "+err.Error())
 		return
 	}
 
 	err = chann.QueueBind(queue.Name, "order-routing-key", "exchange-order", false, nil)
-	err = chann.QueueBind(queue.Name, "order-notification.exchange-key", "order-notification.exchange", false, nil)
+	// err = chann.QueueBind(queue.Name, "order-notification.exchange-key", "order-notification.exchange", false, nil)//dont want to see my own queue onles testing
 
 	if err != nil {
 		log.Print("Failed to bind exchange with  queue")

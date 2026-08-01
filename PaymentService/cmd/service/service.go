@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"net/http"
 	"time"
@@ -9,27 +10,29 @@ import (
 	"github.com/cmd/config"
 	"github.com/cmd/database"
 	"github.com/gin-gonic/gin"
+	"github.com/rabbitmq/amqp091-go"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 type Card struct {
-	Id        string `json:"id"`
-	UserId    string `json:"userId"`
-	Pan       string `json:"pan"`
-	Cvv       int    `json:"cvv"`
-	Balance   int    `json:"balance"`
-	Exp       string `json:"exp"`
-	Active    bool   `json:"active"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
+	Id        string  `json:"id"`
+	UserId    string  `json:"userId"`
+	Pan       string  `json:"pan"`
+	Cvv       int     `json:"cvv"`
+	Balance   float64 `json:"balance"`
+	Exp       string  `json:"exp"`
+	Active    bool    `json:"active"`
+	CreatedAt string  `json:"created_at"`
+	UpdatedAt string  `json:"updated_at"`
 }
 
 type CardUpdate struct {
-	Id     string `json:"id"`
-	UserId string `json:"userId"`
-	Pan    string `json:"pan"`
-	Cvv    int    `json:"cvv"`
-	Exp    string `json:"exp"`
+	Id      string  `json:"id"`
+	UserId  string  `json:"userId"`
+	Pan     string  `json:"pan"`
+	Cvv     int     `json:"cvv"`
+	Exp     string  `json:"exp"`
+	Balance float64 `json:"balance"`
 }
 
 type StandardResponse struct {
@@ -38,34 +41,47 @@ type StandardResponse struct {
 }
 
 type Payment struct {
-	Id        string `json:"id"`
-	UserId    string `json:"user_id"`
-	CardId    string `json:"card_id"`
-	Amount    int    `json:"amount"`
-	ProductId string `json:"product_id"`
-	OrderId   string `json:"order_id"`
-	Status    string `json:"status"` //done, processing, submitted, failed
-	Reason    string `json:"reason"` //eg: insufficient funds, card error, network error,
-	Type      string `json:"type"`   //refund,paid,-
+	Id        string  `json:"id"`
+	UserId    string  `json:"user_id"`
+	CardId    string  `json:"card_id"`
+	Amount    float64 `json:"amount"`
+	ProductId string  `json:"product_id"`
+	OrderId   string  `json:"order_id"`
+	Status    string  `json:"status"` //done, processing, submitted, failed
+	Reason    string  `json:"reason"` //eg: insufficient funds, card error, network error,order canceled
+	Type      string  `json:"type"`   //refund,paid,-
+	// Description string  `json:"description"`
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"updated_at"`
 }
 
 type Order struct {
-	Id          string `json:"id"`
-	UserId      string `json:"user_id"`
-	Count       int    `json:"count"`
-	Amount      int    `json:"amount"`
-	Description int    `json:"description"`
-	ProductId   string `json:"product_id"`
-	Status      string `json:"status"` //done, processing, submitted, canceled
-	CreatedAt   string `json:"created_at"`
-	UpdatedAt   string `json:"updated_at"`
+	Id          string  `json:"id"`
+	UserId      string  `json:"user_id"`
+	Count       int     `json:"count"`
+	Amount      float64 `json:"amount"`
+	Description string  `json:"description"`
+	ProductId   string  `json:"product_id"`
+	Status      string  `json:"status"` //done, processing, submitted, canceled
+	CreatedAt   string  `json:"created_at"`
+	UpdatedAt   string  `json:"updated_at"`
+}
+
+type Refund struct {
+	OrderId   string `json:"order_id"`
+	PaymentId string `json:"payment_id"`
+	UserId    string `json:"user_id"`
 }
 
 type Repo struct {
 	Database *database.DatabaseRep
+	MqChan   *amqp091.Channel
 }
+
+var exchangeKey = "payment.exchange.key"
+var queueName = "payment"
+var exchangeName string = "payment.exchange"
+var consumer string = "payment.consumer"
 
 // var dbname = evn.GetString("DATABASE_NAME")
 // var collectionName = evn.GetString("COLLECTION_NAME")
@@ -86,7 +102,30 @@ func (r *Repo) AddCard(c *gin.Context) {
 	}
 
 	ordery := r.Database.Mongo.Database("OrderyDatabase").Collection("cards")
-	_, err := ordery.InsertOne(context.TODO(), card)
+
+	queryFilter := bson.M{"userId": card.UserId}
+	totalCount, err := ordery.CountDocuments(c.Copy(), queryFilter)
+
+	if err != nil {
+		s := StandardResponse{
+			Message: "Internal server Error",
+			Status:  http.StatusInternalServerError,
+		}
+
+		c.JSON(http.StatusBadRequest, s)
+		return
+	}
+
+	if totalCount > 0 {
+		s := StandardResponse{
+			Message: "Only one card can be added",
+			Status:  http.StatusOK,
+		}
+
+		c.JSON(http.StatusBadRequest, s)
+		return
+	}
+	_, err = ordery.InsertOne(context.TODO(), card)
 
 	if err != nil {
 
@@ -100,7 +139,7 @@ func (r *Repo) AddCard(c *gin.Context) {
 	}
 
 	s := StandardResponse{
-		Message: "Card added succefully",
+		Message: "Card added successfully",
 		Status:  http.StatusOK,
 	}
 
@@ -122,7 +161,7 @@ func (r *Repo) UpdateCard(c *gin.Context) {
 		return
 	}
 
-	ordery := r.Database.Mongo.Database(config.Dbname).Collection(config.CollectionName)
+	ordery := r.Database.Mongo.Database(config.Dbname).Collection(config.CollectionNameCards)
 
 	// filter := bson.M{"userId": cardUp.UserId}
 
@@ -131,6 +170,7 @@ func (r *Repo) UpdateCard(c *gin.Context) {
 			{Key: "pan", Value: cardUp.Pan},
 			{Key: "exp", Value: cardUp.Exp},
 			{Key: "cvv", Value: cardUp.Cvv},
+			{Key: "balance", Value: cardUp.Balance},
 		}},
 	}
 
@@ -160,7 +200,7 @@ func (r *Repo) UpdateCard(c *gin.Context) {
 
 func (r *Repo) DeleteCard(c *gin.Context) {
 
-	ordery := r.Database.Mongo.Database(config.Dbname).Collection(config.CollectionName)
+	ordery := r.Database.Mongo.Database(config.Dbname).Collection(config.CollectionNameCards)
 	userId := c.Param("userId")
 	filter := bson.M{"userId": userId}
 
@@ -188,7 +228,7 @@ func (r *Repo) DeleteCard(c *gin.Context) {
 
 func (r *Repo) GetCardInfo(c *gin.Context) {
 
-	ordery := r.Database.Mongo.Database(config.Dbname).Collection(config.CollectionName)
+	ordery := r.Database.Mongo.Database(config.Dbname).Collection(config.CollectionNameCards)
 	userId := c.Param("userId")
 	filter := bson.M{"userId": userId}
 
@@ -211,7 +251,7 @@ func (r *Repo) GetCardInfo(c *gin.Context) {
 
 }
 
-func (r *Repo) MakePayment(c *gin.Context) { //  call product to get price
+func (r *Repo) MakePayment(c *gin.Context) {
 
 	var order Order
 
@@ -227,7 +267,7 @@ func (r *Repo) MakePayment(c *gin.Context) { //  call product to get price
 		return
 	}
 
-	ordery := r.Database.Mongo.Database(config.Dbname).Collection(config.CollectionName)
+	ordery := r.Database.Mongo.Database(config.Dbname).Collection(config.CollectionNameCards)
 	filter := bson.M{"userId": order.UserId}
 	result := ordery.FindOne(context.Background(), filter)
 
@@ -235,14 +275,13 @@ func (r *Repo) MakePayment(c *gin.Context) { //  call product to get price
 	err = result.Decode(&card)
 
 	if err != nil {
-		log.Print("error decoding json")
+		log.Print("error decoding bson")
 		s := StandardResponse{
 			Message: "Internal server error",
 			Status:  500,
 		}
 
 		c.JSON(http.StatusInternalServerError, s)
-
 		return
 	}
 
@@ -265,9 +304,36 @@ func (r *Repo) MakePayment(c *gin.Context) { //  call product to get price
 
 		if err != nil {
 			log.Print("error inserting payment info")
+			return
+		} //publish on rmQueue
+		b, err := json.Marshal(p)
+		if err != nil {
+			log.Println("failed to wrap struct to json for mq")
 		}
+		
+		r.MqChan.PublishWithContext(c.Copy(),
+			exchangeName, // exchange
+			exchangeKey,  // routing key
+			false,        // mandatory
+			false,        // immediate
+			amqp091.Publishing{
+				ContentType: "application/json",
+				Body:        b,
+			})
+		c.JSON(http.StatusAccepted, p)
+	}
 
-		c.JSON(http.StatusCreated, p)
+}
+
+func (r *Repo) RequestRefund(c *gin.Context) {
+	var refund Refund
+	if err := c.ShouldBindBodyWithJSON(refund); err != nil {
+		s := StandardResponse{
+			Message: "invalid json sent",
+			Status:  http.StatusBadRequest,
+		}
+		c.JSON(http.StatusBadRequest, s)
+		return
 	}
 
 }

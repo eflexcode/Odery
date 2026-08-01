@@ -102,7 +102,7 @@ public class OrderServiceImpl implements OrderService {
 
         ObjectMapper objectMapper = new ObjectMapper();
 
-        messagingProducer.sendMessage(objectMapper.writeValueAsString(savedOrder));// rabbitmq message
+        messagingProducer.sendMessage("QueueType:Order rabbitmqIfy "+objectMapper.writeValueAsString(savedOrder));// rabbitmq message
 
         return repository.save(savedOrder);
     }
