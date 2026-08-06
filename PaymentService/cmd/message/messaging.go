@@ -112,28 +112,30 @@ func Consume(ch *amqp.Channel, mongoClient *mongo.Client) {
 				if card.Balance > 0 && card.Balance > order.Amount {
 
 					p = service.Payment{
-						CardId:    card.Id,
-						Amount:    order.Amount,
-						OrderId:   order.Id,
-						ProductId: order.ProductId,
-						Status:    "done",
-						Type:      "paid",
-						Reason:    "-",
-						CreatedAt: time.Now().String(),
-						UpdatedAt: time.Now().String(),
+						CardId:      card.Id,
+						Amount:      order.Amount,
+						OrderId:     order.Id,
+						ProductId:   order.ProductId,
+						Status:      "done",
+						Type:        "paid",
+						Reason:      "-",
+						Description: order.Description,
+						CreatedAt:   time.Now().String(),
+						UpdatedAt:   time.Now().String(),
 					}
 
 				} else {
 					p = service.Payment{
-						CardId:    card.Id,
-						Amount:    order.Amount,
-						OrderId:   order.Id,
-						ProductId: order.ProductId,
-						Status:    "failed",
-						Type:      "-",
-						Reason:    "insufficient funds",
-						CreatedAt: time.Now().String(),
-						UpdatedAt: time.Now().String(),
+						CardId:      card.Id,
+						Amount:      order.Amount,
+						OrderId:     order.Id,
+						ProductId:   order.ProductId,
+						Status:      "failed",
+						Type:        "-",
+						Reason:      "insufficient funds",
+						Description: order.Description,
+						CreatedAt:   time.Now().String(),
+						UpdatedAt:   time.Now().String(),
 					}
 				}
 			} else if order.Status == "CANCELED" {
@@ -155,16 +157,17 @@ func Consume(ch *amqp.Channel, mongoClient *mongo.Client) {
 					return
 				}
 				p = service.Payment{
-					CardId:    card.Id,
-					UserId:    order.UserId,
-					Amount:    order.Amount,
-					OrderId:   order.Id,
-					ProductId: order.ProductId,
-					Status:    "done",
-					Type:      "refund",
-					Reason:    "order canceled",
-					CreatedAt: time.Now().String(),
-					UpdatedAt: time.Now().String(),
+					CardId:      card.Id,
+					UserId:      order.UserId,
+					Amount:      order.Amount,
+					OrderId:     order.Id,
+					ProductId:   order.ProductId,
+					Status:      "done",
+					Type:        "refund",
+					Description: order.Description,
+					Reason:      "order canceled",
+					CreatedAt:   time.Now().String(),
+					UpdatedAt:   time.Now().String(),
 				}
 			}
 
