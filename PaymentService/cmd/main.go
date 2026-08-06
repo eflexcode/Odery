@@ -134,7 +134,8 @@ func main() {
 	r.GET("/info/{id}", s.GetCardInfo)
 	r.POST("/process-payment", s.MakePayment)
 	r.POST("/request-refund", s.RequestRefund)
-	r.GET("/get-payment-slipts", s.MakePayment)
+	r.GET("/get-payment-slipts/:user_id", s.GetPaymentSlipts)
+	r.GET("/get-payment-slipt/:id", s.GetPaymentSlipt)
 
 	r.Run(evn.GetString("PORT", ":8089"))
 
