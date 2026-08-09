@@ -12,16 +12,19 @@ import (
 	"github.com/cmd/config"
 	"github.com/cmd/database"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/rabbitmq/amqp091-go"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
+
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type Card struct {
-	Id        string  `json:"id"`
-	UserId    string  `json:"userId"`
+	Id        string  `bson:"_id"`
+	UserId    string  `json:"userid"`
 	Pan       string  `json:"pan"`
-	Cvv       int     `json:"cvv"`
+	Cvv       string  `json:"cvv"`
 	Balance   float64 `json:"balance"`
 	Exp       string  `json:"exp"`
 	Active    bool    `json:"active"`
@@ -29,11 +32,19 @@ type Card struct {
 	UpdatedAt string  `json:"updated_at"`
 }
 
+type CardAdd struct {
+	UserId  string  `json:"userid"`
+	Pan     string  `json:"pan"`
+	Cvv     string  `json:"cvv"`
+	Balance float64 `json:"balance"`
+	Exp     string  `json:"exp"`
+	Active  bool    `json:"active"`
+}
+
 type CardUpdate struct {
-	Id      string  `json:"id"`
 	UserId  string  `json:"userId"`
 	Pan     string  `json:"pan"`
-	Cvv     int     `json:"cvv"`
+	Cvv     string     `json:"cvv"`
 	Exp     string  `json:"exp"`
 	Balance float64 `json:"balance"`
 }
@@ -77,6 +88,16 @@ type Order struct {
 	UpdatedAt   string  `json:"updated_at"`
 }
 
+type User struct {
+	Id        string `json:"id"`
+	UserName  string `json:"username"`
+	Role      string `json:"role"`
+	Name      string `json:"Name"`
+	ImgUrl    string `json:"img_url"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
+}
+
 type Refund struct {
 	OrderId   string `json:"order_id"`
 	PaymentId string `json:"payment_id"`
@@ -93,13 +114,14 @@ var queueName = "payment"
 var exchangeName string = "payment.exchange"
 var consumer string = "payment.consumer"
 var orderServerBaseUrl string = "http://localhost:8091/"
+var userServerBaseUrl string = "http://localhost:8095/"
 
 // var dbname = evn.GetString("DATABASE_NAME")
 // var collectionName = evn.GetString("COLLECTION_NAME")
 
 func (r *Repo) AddCard(c *gin.Context) {
 
-	var card Card
+	var card CardAdd
 
 	if err := c.ShouldBindJSON(&card); err != nil {
 
@@ -112,7 +134,7 @@ func (r *Repo) AddCard(c *gin.Context) {
 		return
 	}
 
-	ordery := r.Database.Mongo.Database("OrderyDatabase").Collection("cards")
+	ordery := r.Database.Mongo.Database("OrderyPayment").Collection("cards")
 
 	queryFilter := bson.M{"userId": card.UserId}
 	totalCount, err := ordery.CountDocuments(c.Copy(), queryFilter)
@@ -136,7 +158,70 @@ func (r *Repo) AddCard(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, s)
 		return
 	}
-	_, err = ordery.InsertOne(context.TODO(), card)
+
+	resp, err := http.Get(userServerBaseUrl + card.UserId)
+	if err != nil {
+
+		s := StandardResponse{
+			Message: "Invalid user id sent",
+			Status:  http.StatusBadRequest,
+		}
+
+		c.JSON(http.StatusBadRequest, s)
+		return
+	}
+
+	defer resp.Body.Close()
+
+	bodyByte, err := io.ReadAll(resp.Body)
+
+	if err != nil {
+
+		s := StandardResponse{
+			Message: "Internal server error",
+			Status:  http.StatusInternalServerError,
+		}
+
+		c.JSON(http.StatusInternalServerError, s)
+		return
+	}
+
+	var user User
+
+	err = json.Unmarshal(bodyByte, &user)
+
+	if err != nil {
+		s := StandardResponse{
+			Message: "Internal server error",
+			Status:  http.StatusInternalServerError,
+		}
+
+		c.JSON(http.StatusInternalServerError, s)
+		return
+	}
+
+	if user.Id != card.UserId {
+		s := StandardResponse{
+			Message: "Invalid user id sent",
+			Status:  http.StatusUnauthorized,
+		}
+
+		c.JSON(http.StatusUnauthorized, s)
+		return
+	}
+
+	var cardR Card
+	cardR.Id = uuid.New().String()
+	cardR.Active = true
+	cardR.Balance = card.Balance
+	cardR.Cvv = card.Cvv
+	cardR.Pan = card.Pan
+	cardR.Exp = card.Exp
+	cardR.UserId = card.UserId
+	cardR.UpdatedAt = time.Now().String()
+	cardR.CreatedAt = time.Now().String()
+
+	_, err = ordery.InsertOne(context.TODO(), cardR)
 
 	if err != nil {
 
@@ -161,13 +246,13 @@ func (r *Repo) UpdateCard(c *gin.Context) {
 
 	var cardUp CardUpdate
 
-	if err := c.ShouldBindJSON(cardUp); err != nil {
+	if err := c.ShouldBindJSON(&cardUp); err != nil {
 
 		s := StandardResponse{
 			Message: "Bad request",
 			Status:  http.StatusBadRequest,
 		}
-
+		log.Println("uoououououououppipipipipipi")
 		c.JSON(http.StatusBadRequest, s)
 		return
 	}
@@ -184,10 +269,10 @@ func (r *Repo) UpdateCard(c *gin.Context) {
 			{Key: "balance", Value: cardUp.Balance},
 		}},
 	}
-
-	id, _ := bson.ObjectIDFromHex(cardUp.Id)
-
-	_, err := ordery.UpdateByID(c.Copy(), id, update)
+	filter := bson.M{"userId": cardUp.UserId}
+	// id, _ := bson.ObjectIDFromHex(cardUp.Id)
+	_, err := ordery.UpdateOne(c.Copy(), filter, update)
+	// _, err := ordery.UpdateByID(c.Copy(), id, update)
 
 	if err != nil {
 
@@ -201,7 +286,7 @@ func (r *Repo) UpdateCard(c *gin.Context) {
 	}
 
 	s := StandardResponse{
-		Message: "Card updated sucefuly",
+		Message: "Card updated successfully",
 		Status:  http.StatusOK,
 	}
 
@@ -296,45 +381,87 @@ func (r *Repo) MakePayment(c *gin.Context) {
 		return
 	}
 
+	var p Payment
+
 	if card.Balance > 0 && card.Balance > order.Amount {
 
-		p := Payment{
+		var deducte float64 = card.Balance - order.Amount
+		va := bson.D{{Key: "$set", Value: bson.D{
+			{Key: "balance", Value: deducte},
+		}}}
+
+		id, _ := bson.ObjectIDFromHex(card.Id)
+		_, err := ordery.UpdateByID(c.Copy(), id, va)
+
+		if err != nil {
+			p = Payment{
+				CardId:      card.Id,
+				Amount:      order.Amount,
+				UserId:      order.UserId,
+				OrderId:     order.Id,
+				ProductId:   order.ProductId,
+				Status:      "failed",
+				Type:        "_",
+				Reason:      "insufficient funds",
+				Description: order.Description,
+				CreatedAt:   time.Now().String(),
+				UpdatedAt:   time.Now().String(),
+			}
+		} else {
+			p = Payment{
+				CardId:      card.Id,
+				Amount:      order.Amount,
+				UserId:      order.UserId,
+				OrderId:     order.Id,
+				ProductId:   order.ProductId,
+				Status:      "done",
+				Type:        "paid",
+				Reason:      "",
+				Description: order.Description,
+				CreatedAt:   time.Now().String(),
+				UpdatedAt:   time.Now().String(),
+			}
+		}
+	} else {
+		p = Payment{
 			CardId:      card.Id,
 			Amount:      order.Amount,
 			UserId:      order.UserId,
 			OrderId:     order.Id,
 			ProductId:   order.ProductId,
-			Status:      "done",
-			Type:        "paid",
-			Reason:      "",
+			Status:      "failed",
+			Type:        "_",
+			Reason:      "insufficient funds",
 			Description: order.Description,
 			CreatedAt:   time.Now().String(),
 			UpdatedAt:   time.Now().String(),
 		}
 
-		_, err := ordery.InsertOne(context.TODO(), p)
+	}
+	orderyP := r.Database.Mongo.Database(config.Dbname).Collection(config.CollectionNamePayments)
 
-		if err != nil {
-			log.Print("error inserting payment info")
-			return
-		} //publish on rmQueue
-		b, err := json.Marshal(p)
-		if err != nil {
-			log.Println("failed to wrap struct to json for mq")
-		}
+	_, err = orderyP.InsertOne(context.TODO(), p)
 
-		r.MqChan.PublishWithContext(c.Copy(),
-			exchangeName, // exchange
-			exchangeKey,  // routing key
-			false,        // mandatory
-			false,        // immediate
-			amqp091.Publishing{
-				ContentType: "application/json",
-				Body:        b,
-			})
-		c.JSON(http.StatusAccepted, p)
+	if err != nil {
+		log.Print("error inserting payment info")
+		return
+	} //publish on rmQueue
+	b, err := json.Marshal(p)
+	if err != nil {
+		log.Println("failed to wrap struct to json for mq")
 	}
 
+	r.MqChan.PublishWithContext(c.Copy(),
+		exchangeName, // exchange
+		exchangeKey,  // routing key
+		false,        // mandatory
+		false,        // immediate
+		amqp091.Publishing{
+			ContentType: "application/json",
+			Body:        b,
+		})
+
+	c.JSON(http.StatusAccepted, p)
 }
 
 func (r *Repo) GetPaymentSlipts(c *gin.Context) {
@@ -529,8 +656,8 @@ func (r *Repo) RequestRefund(c *gin.Context) {
 
 	var card Card
 	err = sRe.Decode(&card)
-	
-	if err != nil{
+
+	if err != nil {
 		s := StandardResponse{
 			Message: "internal server error",
 			Status:  http.StatusInternalServerError,
@@ -538,7 +665,71 @@ func (r *Repo) RequestRefund(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, s)
 		return
 	}
-	
-	
+
+	update := bson.D{
+		{Key: "$set", Value: bson.D{
+			{Key: "balance", Value: card.Balance + payment.Amount},
+		}},
+	}
+
+	id, _ := bson.ObjectIDFromHex(card.Id)
+
+	_, err = cardColl.UpdateByID(c.Copy(), id, update)
+
+	if err != nil {
+
+		s := StandardResponse{
+			Message: "Internal server error",
+			Status:  http.StatusInternalServerError,
+		}
+
+		c.JSON(http.StatusInternalServerError, s)
+		return
+	}
+
+	//update payment
+	updateP := bson.D{
+		{Key: "$set", Value: bson.D{
+			{Key: "status", Value: "done"},
+			{Key: "reason", Value: "order canceled"},
+		}},
+	}
+
+	idP, _ := bson.ObjectIDFromHex(payment.Id)
+
+	_, err = coll.UpdateByID(c.Copy(), idP, updateP)
+
+	if err != nil {
+
+		s := StandardResponse{
+			Message: "Internal server error",
+			Status:  http.StatusInternalServerError,
+		}
+
+		c.JSON(http.StatusInternalServerError, s)
+		return
+	}
+
+	payment.Status = "done"
+	payment.Reason = "order canceled"
+
+	pBytes, err := json.Marshal(payment)
+
+	r.MqChan.PublishWithContext(context.Background(),
+		exchangeName, // exchange
+		exchangeKey,  // routing key
+		false,        // mandatory
+		false,        // immediate
+		amqp.Publishing{
+			ContentType:  "application/json",
+			Body:         pBytes,
+			DeliveryMode: amqp.Persistent,
+		})
+
+	s := StandardResponse{
+		Message: "refund made successfully",
+		Status:  http.StatusOK,
+	}
+	c.JSON(http.StatusOK, s)
 
 }

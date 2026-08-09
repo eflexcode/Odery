@@ -142,10 +142,7 @@ func Consume(ch *amqp.Channel, mongoClient *mongo.Client) {
 				//do refund
 				update := bson.D{
 					{Key: "$set", Value: bson.D{
-						{Key: "pan", Value: card.Pan},
-						{Key: "exp", Value: card.Exp},
-						{Key: "cvv", Value: card.Cvv},
-						{Key: "balance", Value: card.Balance},
+						{Key: "balance", Value: card.Balance+order.Amount},
 					}},
 				}
 
