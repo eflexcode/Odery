@@ -21,7 +21,7 @@ import (
 )
 
 type Card struct {
-	Id        string  `bson:"_id"`
+	Id        string  `json:"id"`
 	UserId    string  `json:"userid"`
 	Pan       string  `json:"pan"`
 	Cvv       string  `json:"cvv"`
@@ -44,7 +44,7 @@ type CardAdd struct {
 type CardUpdate struct {
 	UserId  string  `json:"userId"`
 	Pan     string  `json:"pan"`
-	Cvv     string     `json:"cvv"`
+	Cvv     string  `json:"cvv"`
 	Exp     string  `json:"exp"`
 	Balance float64 `json:"balance"`
 }
@@ -133,10 +133,9 @@ func (r *Repo) AddCard(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, s)
 		return
 	}
-
 	ordery := r.Database.Mongo.Database("OrderyPayment").Collection("cards")
 
-	queryFilter := bson.M{"userId": card.UserId}
+	queryFilter := bson.M{"userid": card.UserId}
 	totalCount, err := ordery.CountDocuments(c.Copy(), queryFilter)
 
 	if err != nil {
@@ -252,7 +251,6 @@ func (r *Repo) UpdateCard(c *gin.Context) {
 			Message: "Bad request",
 			Status:  http.StatusBadRequest,
 		}
-		log.Println("uoououououououppipipipipipi")
 		c.JSON(http.StatusBadRequest, s)
 		return
 	}
@@ -260,19 +258,31 @@ func (r *Repo) UpdateCard(c *gin.Context) {
 	ordery := r.Database.Mongo.Database(config.Dbname).Collection(config.CollectionNameCards)
 
 	// filter := bson.M{"userId": cardUp.UserId}
-
-	update := bson.D{
-		{Key: "$set", Value: bson.D{
-			{Key: "pan", Value: cardUp.Pan},
-			{Key: "exp", Value: cardUp.Exp},
-			{Key: "cvv", Value: cardUp.Cvv},
-			{Key: "balance", Value: cardUp.Balance},
-		}},
+	log.Println(cardUp.Exp)
+	// d :=	bson.E{{Key:"",Value:bson.B{}}}
+	update := bson.M{
+		"$set": bson.M{
+			"pan":     cardUp.Pan,
+			"exp":     cardUp.Exp,
+			"cvv":     cardUp.Cvv,
+			"balance": cardUp.Balance,
+		},
 	}
-	filter := bson.M{"userId": cardUp.UserId}
+
+	filter := bson.M{"userid": cardUp.UserId}
 	// id, _ := bson.ObjectIDFromHex(cardUp.Id)
-	_, err := ordery.UpdateOne(c.Copy(), filter, update)
+	result, err := ordery.UpdateOne(c.Copy(), filter, update)
 	// _, err := ordery.UpdateByID(c.Copy(), id, update)
+
+	if result.MatchedCount == 0 {
+		s := StandardResponse{
+			Message: "No user found with id: " + cardUp.UserId,
+			Status:  http.StatusNotFound,
+		}
+
+		c.JSON(http.StatusNotFound, s)
+		return
+	}
 
 	if err != nil {
 
@@ -297,8 +307,8 @@ func (r *Repo) UpdateCard(c *gin.Context) {
 func (r *Repo) DeleteCard(c *gin.Context) {
 
 	ordery := r.Database.Mongo.Database(config.Dbname).Collection(config.CollectionNameCards)
-	userId := c.Param("userId")
-	filter := bson.M{"userId": userId}
+	userId := c.Param("user_id")
+	filter := bson.M{"userid": userId}
 
 	_, err := ordery.DeleteOne(c.Copy(), filter)
 
@@ -325,9 +335,9 @@ func (r *Repo) DeleteCard(c *gin.Context) {
 func (r *Repo) GetCardInfo(c *gin.Context) {
 
 	ordery := r.Database.Mongo.Database(config.Dbname).Collection(config.CollectionNameCards)
-	userId := c.Param("userId")
-	filter := bson.M{"userId": userId}
-
+	userId := c.Param("user_id")
+	filter := bson.M{"userid": userId}
+	log.Println(userId)
 	var card Card
 
 	result := ordery.FindOne(c.Copy(), filter)
@@ -338,12 +348,13 @@ func (r *Repo) GetCardInfo(c *gin.Context) {
 			Message: "Internal server error",
 			Status:  http.StatusInternalServerError,
 		}
+		log.Println(err.Error())
 
 		c.JSON(http.StatusInternalServerError, s)
 		return
 	}
 
-	c.JSON(http.StatusInternalServerError, result)
+	c.JSON(http.StatusOK, card)
 
 }
 
@@ -364,7 +375,7 @@ func (r *Repo) MakePayment(c *gin.Context) {
 	}
 
 	ordery := r.Database.Mongo.Database(config.Dbname).Collection(config.CollectionNameCards)
-	filter := bson.M{"userId": order.UserId}
+	filter := bson.M{"userid": order.UserId}
 	result := ordery.FindOne(context.Background(), filter)
 
 	var card Card
@@ -390,8 +401,8 @@ func (r *Repo) MakePayment(c *gin.Context) {
 			{Key: "balance", Value: deducte},
 		}}}
 
-		id, _ := bson.ObjectIDFromHex(card.Id)
-		_, err := ordery.UpdateByID(c.Copy(), id, va)
+		// id, _ := bson.ObjectIDFromHex(card.Id)
+		_, err := ordery.UpdateOne(c.Copy(), filter, va)
 
 		if err != nil {
 			p = Payment{
@@ -438,6 +449,8 @@ func (r *Repo) MakePayment(c *gin.Context) {
 		}
 
 	}
+
+	p.Id = uuid.NewString()
 	orderyP := r.Database.Mongo.Database(config.Dbname).Collection(config.CollectionNamePayments)
 
 	_, err = orderyP.InsertOne(context.TODO(), p)
@@ -651,7 +664,7 @@ func (r *Repo) RequestRefund(c *gin.Context) {
 	}
 
 	cardColl := r.Database.Mongo.Database(config.Dbname).Collection(config.CollectionNameCards)
-	cardFilter := bson.M{"userId": refund.UserId}
+	cardFilter := bson.M{"userid": refund.UserId}
 	sRe := cardColl.FindOne(c.Copy(), cardFilter)
 
 	var card Card
@@ -672,9 +685,9 @@ func (r *Repo) RequestRefund(c *gin.Context) {
 		}},
 	}
 
-	id, _ := bson.ObjectIDFromHex(card.Id)
-
-	_, err = cardColl.UpdateByID(c.Copy(), id, update)
+	// id, _ := bson.ObjectIDFromHex(card.Id)
+	// _, err = cardColl.UpdateByID(c.Copy(), id, update)
+	_, err = cardColl.UpdateOne(c.Copy(), cardFilter, update)
 
 	if err != nil {
 
@@ -695,10 +708,12 @@ func (r *Repo) RequestRefund(c *gin.Context) {
 		}},
 	}
 
-	idP, _ := bson.ObjectIDFromHex(payment.Id)
-
-	_, err = coll.UpdateByID(c.Copy(), idP, updateP)
-
+	// idP, _ := bson.ObjectIDFromHex(payment.Id)
+	// _, err = coll.UpdateByID(c.Copy(), idP, updateP)
+	
+	paymentFilter := bson.M{"id": payment.Id}
+	_, err = coll.UpdateOne(c.Copy(), paymentFilter, updateP)
+	
 	if err != nil {
 
 		s := StandardResponse{
@@ -730,6 +745,7 @@ func (r *Repo) RequestRefund(c *gin.Context) {
 		Message: "refund made successfully",
 		Status:  http.StatusOK,
 	}
+	
 	c.JSON(http.StatusOK, s)
 
 }

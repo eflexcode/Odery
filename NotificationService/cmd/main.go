@@ -49,7 +49,7 @@ func main() {
 
 	defer chann.Close()
 
-	queue, err := chann.QueueDeclare("order-notification", true, false, false, false, nil)//notification queue
+	queue, err := chann.QueueDeclare("order-notification", true, false, false, false, nil) //notification queue
 
 	if err != nil {
 		log.Print("Failed to declare notification queue")
@@ -59,7 +59,7 @@ func main() {
 	err = chann.ExchangeDeclare("order-notification.exchange", "fanout", true, false, false, false, nil)
 
 	if err != nil {
-		log.Print("Failed to declare exchange queue error::  "+err.Error())
+		log.Print("Failed to declare exchange queue error::  " + err.Error())
 		return
 	}
 
@@ -114,7 +114,7 @@ func main() {
 				//static queue type has to be
 				if err := json.Unmarshal([]byte(payloadAndType[1]), &order); err != nil {
 					log.Println("Error parsing rabbitmq json to struct")
-					return
+					continue
 				}
 
 				notification.UserId = order.UserId
@@ -146,15 +146,37 @@ func main() {
 
 				if order.Status == "CANCELED" {
 					payload.Title = "Order canceld"
-					payload.Message =  count + " Purchase for " + order.ProductName + " at " + order.ProductCurrency + " " + amount + " with order id: " + order.Id + " canceld"
-
+					payload.Message = count + " Purchase for " + order.ProductName + " at " + order.ProductCurrency + " " + amount + " with order id: " + order.Id + " canceld"
 				}
 
 				payload.Intent = "http://localhost:8092/" + order.Id
 
 				notification.Payload = payload
 			} else if t[1] == "Payment" {
+				var payment entity.Payment
 
+				if err := json.Unmarshal([]byte(payloadAndType[1]), &payment); err != nil {
+					log.Println("Error parsing rabbitmq json to struct")
+					continue
+				}
+
+				notification.UserId = payment.UserId
+				notification.CreatedAt = time.Now().String()
+				notification.Type = "payment"
+
+				var payload entity.Payload
+				if payment.Status == "done"{
+						payload.Title = "Payment made!"
+				}else if payment.Status == "failed"{
+						payload.Title = "Payment failed!"
+				}else{
+						payload.Title = "Issue with payment"
+				}
+				
+				payload.Message = payment.Description+" id's payment id: "+payment.Id+"\n order id: "+payment.OrderId+"\n product id: "+payment.ProductId+"\n"
+				payload.Intent = "http://localhost:8089/get-payment-slipt/" + payment.Id
+
+				notification.Payload = payload
 			}
 
 			database.InsertNotification(context.Background(), dbRepo.DatabaseMongo, notification)

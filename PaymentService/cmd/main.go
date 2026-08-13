@@ -89,12 +89,13 @@ func main() {
 	// 	message.FailOnError(err, "Failed to bind to payment queue ")
 	// } //dont want to see what i published
 
+	// err = chann.QueueBind(queue.Name, "order-routing-key", "exchange-order", false, nil)
+
 	err = ch.QueueBind(qu.Name, orderExchangeKey, orderExchangeName, false, nil)
 	if err != nil {
 		message.FailOnError(err, "Failed to bind to payment queue ")
 	}
 
-	message.Consume(ch, mongoClient)
 	// msgs, err := ch.Consume(
 	// 	q.Name, // queue
 	// 	"",     // consumer
@@ -105,11 +106,6 @@ func main() {
 	// 	nil,    // args
 	// )
 
-	// go func() {
-	// 	for d := range msgs {
-	// 		log.Printf("Received a message: %s", d.Body)
-	// 	}
-	// }()
 
 	dbRep := database.DatabaseRep{
 		Mongo: mongoClient,
@@ -130,12 +126,18 @@ func main() {
 
 	r.POST("/add-card", s.AddCard)
 	r.PUT("/update-card", s.UpdateCard)
-	r.DELETE("/delete-card/{user_id}", s.DeleteCard)
-	r.GET("/info/{id}", s.GetCardInfo)
+	r.DELETE("/delete-card/:user_id", s.DeleteCard)
+	r.GET("/info/:user_id", s.GetCardInfo)
 	r.POST("/process-payment", s.MakePayment)
 	r.POST("/request-refund", s.RequestRefund)
 	r.GET("/get-payment-slipts/:user_id", s.GetPaymentSlipts)
 	r.GET("/get-payment-slipt/:id", s.GetPaymentSlipt)
+	
+	go func() {
+		// for {
+			message.Consume(ch, mongoClient)
+		// }
+	}()
 
 	r.Run(evn.GetString("PORT", ":8089"))
 
