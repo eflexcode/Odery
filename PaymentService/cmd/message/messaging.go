@@ -72,7 +72,7 @@ func Consume(ch *amqp.Channel, mongoClient *mongo.Client) {
 
 		var errorCheck bool = false
 
-		// log.Print("RabbitMq Message recived:: " + string(mg.Body))
+		log.Print("RabbitMq Message recived:: " + string(mg.Body))
 		var body string = string(mg.Body)
 		var splitedBody = strings.Split(body, " rabbitmqIfy ") //  manditory expacteing 2 split. dont use the first one only in notification service to differciate
 		if len(splitedBody) != 2 {
@@ -95,10 +95,10 @@ func Consume(ch *amqp.Channel, mongoClient *mongo.Client) {
 
 		ordery := mongoClient.Database(config.Dbname).Collection(config.CollectionNameCards)
 		orderyPaymentCollection := mongoClient.Database(config.Dbname).Collection(config.CollectionNamePayments)
-		log.Println("order:: "+orderBody)
+		// log.Println("order:: "+orderBody)
 		filter := bson.M{"userid": order.UserId}
 		result := ordery.FindOne(context.Background(), filter)
-		
+
 		// log.Println(result.Err().Error())
 		//check for no card error 404
 		// if result.Err().Error() == mongo.ErrNilDocument.Error() {
@@ -211,7 +211,10 @@ func Consume(ch *amqp.Channel, mongoClient *mongo.Client) {
 		if !errorCheck {
 
 			p.Id = uuid.NewString()
-			_, err = orderyPaymentCollection.InsertOne(context.TODO(), p)
+			// for duplicate looping an eleiminating 
+			if p.CardId != "" {
+				_, err = orderyPaymentCollection.InsertOne(context.TODO(), p)
+			}
 
 			if err != nil {
 				log.Print("error inserting payment info")
@@ -219,27 +222,27 @@ func Consume(ch *amqp.Channel, mongoClient *mongo.Client) {
 				continue
 			}
 
+			paymentByte, err := json.Marshal(p)
+			if err != nil {
+				log.Print("error unwrapping bytes")
+				continue
+			}
+
+			paymentDataForNotificationService := "QueueType:Payment rabbitmqIfy " + string(paymentByte)
+			g := bytes.NewBufferString(paymentDataForNotificationService)
+			//if error it would just be o bytes
+			ch.PublishWithContext(context.Background(),
+				exchangeName, // exchange
+				exchangeKey,  // routing key
+				false,        // mandatory
+				false,        // immediate
+				amqp.Publishing{
+					ContentType:  "application/json",
+					Body:         g.Bytes(),
+					DeliveryMode: amqp.Persistent,
+				})
 		}
 
-		paymentByte, err := json.Marshal(p)
-		if err != nil {
-			log.Print("error unwrapping bytes")
-			continue
-		}
-
-		paymentDataForNotificationService := "QueueType:Payment rabbitmqIfy " + string(paymentByte)
-		g := bytes.NewBufferString(paymentDataForNotificationService)
-		//if error it would just be o bytes
-		ch.PublishWithContext(context.Background(),
-			exchangeName, // exchange
-			exchangeKey,  // routing key
-			false,        // mandatory
-			false,        // immediate
-			amqp.Publishing{
-				ContentType:  "application/json",
-				Body:         g.Bytes(),
-				DeliveryMode: amqp.Persistent,
-			})
 	}
 
 	// }()

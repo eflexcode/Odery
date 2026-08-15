@@ -63,8 +63,16 @@ func main() {
 		return
 	}
 
+	err = chann.ExchangeDeclare("payment.exchange", "fanout", true, false, false, false, nil)
+
+	if err != nil {
+		log.Print("Failed to declare exchange queue error::  " + err.Error())
+		return
+	}
+
 	err = chann.QueueBind(queue.Name, "order-routing-key", "exchange-order", false, nil)
-	// err = chann.QueueBind(queue.Name, "order-notification.exchange-key", "order-notification.exchange", false, nil)//dont want to see my own queue onles testing
+	err = chann.QueueBind(queue.Name, "", "payment.exchange", false, nil)
+	// err = chann.QueueBind(queue.Name, "order-notification.exchange-key", "order-notification.exchange", false, nil) //dont want to see my own queue onles testing
 
 	if err != nil {
 		log.Print("Failed to bind exchange with  queue")
@@ -107,6 +115,7 @@ func main() {
 
 			var notification entity.Notification
 			notification.Id = uuid.New().String()
+			log.Println("RabbitMq received payload:: " + payloadAndType[0])
 
 			if t[1] == "Order" { //two type  sofar Order and Payment
 
@@ -152,6 +161,9 @@ func main() {
 				payload.Intent = "http://localhost:8092/" + order.Id
 
 				notification.Payload = payload
+
+				database.InsertNotification(context.Background(), dbRepo.DatabaseMongo, notification)
+
 			} else if t[1] == "Payment" {
 				var payment entity.Payment
 
@@ -165,21 +177,22 @@ func main() {
 				notification.Type = "payment"
 
 				var payload entity.Payload
-				if payment.Status == "done"{
-						payload.Title = "Payment made!"
-				}else if payment.Status == "failed"{
-						payload.Title = "Payment failed!"
-				}else{
-						payload.Title = "Issue with payment"
+				if payment.Status == "done" {
+					payload.Title = "Payment made!"
+				} else if payment.Status == "failed" {
+					payload.Title = "Payment failed!"
+				} else {
+					payload.Title = "Issue with payment"
 				}
-				
-				payload.Message = payment.Description+" id's payment id: "+payment.Id+"\n order id: "+payment.OrderId+"\n product id: "+payment.ProductId+"\n"
+
+				payload.Message = payment.Description + " id's payment id: " + payment.Id + "\n order id: " + payment.OrderId + "\n product id: " + payment.ProductId + "\n"
 				payload.Intent = "http://localhost:8089/get-payment-slipt/" + payment.Id
 
 				notification.Payload = payload
+				if payment.CardId != "" {
+					database.InsertNotification(context.Background(), dbRepo.DatabaseMongo, notification)
+				}
 			}
-
-			database.InsertNotification(context.Background(), dbRepo.DatabaseMongo, notification)
 
 		}
 	}()
