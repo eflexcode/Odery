@@ -1,5 +1,6 @@
 package com.ifeanyi.UserService.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -17,6 +18,7 @@ public class User {
     @JsonProperty("username")
     @Column(unique = true)
     private String username;
+    @JsonIgnore
     @JsonProperty("password")
     private String password;
     @JsonProperty("role")

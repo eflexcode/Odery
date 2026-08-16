@@ -1,6 +1,7 @@
 package message
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"log"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/cmd/config"
 	"github.com/cmd/service"
+	"github.com/google/uuid"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -64,98 +66,69 @@ func Consume(ch *amqp.Channel, mongoClient *mongo.Client) {
 	// 	return
 	// }
 
-	go func() {
+	// go func() {
 
-		for mg := range msgs {
+	for mg := range msgs {
 
-			// log.Print("RabbitMq Message recived:: " + string(mg.Body))
-			var body string = string(mg.Body)
-			var splitedBody = strings.Split(body, " rabbitmqIfy ") //  manditory expacteing 2 split. dont use the first one only in notification service to differciate
+		var errorCheck bool = false
 
-			var orderBody string = splitedBody[1]
-			log.Print("RabbitMq Message recived:: ")
+		log.Print("RabbitMq Message recived:: " + string(mg.Body))
+		var body string = string(mg.Body)
+		var splitedBody = strings.Split(body, " rabbitmqIfy ") //  manditory expacteing 2 split. dont use the first one only in notification service to differciate
+		if len(splitedBody) != 2 {
+			errorCheck = true
+			continue
+		}
 
-			var order service.Order
-			if err := json.Unmarshal([]byte(orderBody), &order); err != nil {
-				log.Print("error unwrapping json::  " + err.Error())
-				return
-			}
+		var orderBody string
+		if !errorCheck {
+			orderBody = splitedBody[1]
+			// log.Print("RabbitMq Message recived:: " + splitedBody[1])
+		}
 
-			ordery := mongoClient.Database(config.Dbname).Collection(config.CollectionNameCards)
-			orderyPaymentCollection := mongoClient.Database(config.Dbname).Collection(config.CollectionNamePayments)
-			filter := bson.M{"userId": order.UserId}
-			result := ordery.FindOne(context.Background(), filter)
-			//check for no card error 404
-			if result.Err() != nil {
-				log.Print("error getting data from db:: " + result.Err().Error())
-				return
-			}
-			var card service.Card
-			err := result.Decode(&card)
+		var order service.Order
+		if err := json.Unmarshal([]byte(orderBody), &order); err != nil {
+			log.Print("error unwrapping json:: " + err.Error())
+			errorCheck = true
+			continue
+		}
 
-			if err != nil {
-				log.Print("error decoding json:: " + err.Error())
-				return
-			}
+		ordery := mongoClient.Database(config.Dbname).Collection(config.CollectionNameCards)
+		orderyPaymentCollection := mongoClient.Database(config.Dbname).Collection(config.CollectionNamePayments)
+		// log.Println("order:: "+orderBody)
+		filter := bson.M{"userid": order.UserId}
+		result := ordery.FindOne(context.Background(), filter)
 
-			var p service.Payment
+		// log.Println(result.Err().Error())
+		//check for no card error 404
+		// if result.Err().Error() == mongo.ErrNilDocument.Error() {
+		// 	log.Print("error getting data from db:: " + result.Err().Error())
+		// 	errorCheck = true
+		// 	continue
+		// }
 
-			// You can fake both network response and card issues here eg.
-			// refund,paid:{Type}, insufficient funds, card error, order canceled, network/bank error:{Reason}, done, processing, submitted, failed:{Status}
-			// for fields/types
-			//	Status    string `json:"status"`
-			//	Reason    string `json:"reason"`
-			//	Type      string `json:"type"`
+		var card service.Card
+		err := result.Decode(&card)
 
-			if order.Status == "SUBMITTED" {
-				//do something with the else mainly insufficient funds or fake network error.
-				if card.Balance > 0 && card.Balance > order.Amount {
+		if err != nil {
+			log.Print("error decoding json:: " + err.Error())
+			errorCheck = true
+			continue
+		}
 
-					p = service.Payment{
-						CardId:      card.Id,
-						Amount:      order.Amount,
-						OrderId:     order.Id,
-						ProductId:   order.ProductId,
-						Status:      "done",
-						Type:        "paid",
-						Reason:      "-",
-						Description: order.Description,
-						CreatedAt:   time.Now().String(),
-						UpdatedAt:   time.Now().String(),
-					}
+		var p service.Payment
 
-				} else {
-					p = service.Payment{
-						CardId:      card.Id,
-						Amount:      order.Amount,
-						OrderId:     order.Id,
-						ProductId:   order.ProductId,
-						Status:      "failed",
-						Type:        "-",
-						Reason:      "insufficient funds",
-						Description: order.Description,
-						CreatedAt:   time.Now().String(),
-						UpdatedAt:   time.Now().String(),
-					}
-				}
-			} else if order.Status == "CANCELED" {
-				//do refund
-				update := bson.D{
-					{Key: "$set", Value: bson.D{
-						{Key: "pan", Value: card.Pan},
-						{Key: "exp", Value: card.Exp},
-						{Key: "cvv", Value: card.Cvv},
-						{Key: "balance", Value: card.Balance},
-					}},
-				}
+		// You can fake both network response and card issues here eg.
+		// refund,paid:{Type}, insufficient funds, card error, order canceled, network/bank error:{Reason}, done, processing, submitted, failed:{Status}
+		// for fields/types
+		//	Status    string `json:"status"`
+		//	Reason    string `json:"reason"`
+		//	Type      string `json:"type"`
 
-				id, _ := bson.ObjectIDFromHex(card.Id)
+		if order.Status == "SUBMITTED" {
+			//do something with the else mainly insufficient funds or fake network error.
+			if card.Balance > 0 && card.Balance > order.Amount {
 
-				_, err := ordery.UpdateByID(context.Background(), id, update)
-				if err != nil {
-					log.Println("Payment refund failed")
-					return
-				}
 				p = service.Payment{
 					CardId:      card.Id,
 					UserId:      order.UserId,
@@ -163,28 +136,101 @@ func Consume(ch *amqp.Channel, mongoClient *mongo.Client) {
 					OrderId:     order.Id,
 					ProductId:   order.ProductId,
 					Status:      "done",
-					Type:        "refund",
+					Type:        "paid",
+					Reason:      "-",
 					Description: order.Description,
-					Reason:      "order canceled",
+					CreatedAt:   time.Now().String(),
+					UpdatedAt:   time.Now().String(),
+				}
+
+				update := bson.D{
+					{Key: "$set", Value: bson.D{
+						{Key: "balance", Value: card.Balance - order.Amount},
+					}},
+				}
+
+				if !errorCheck {
+					_, err := ordery.UpdateOne(context.Background(), filter, update)
+					if err != nil {
+						log.Println("Payment refund failed")
+						errorCheck = true
+						continue
+					}
+				}
+
+			} else {
+				p = service.Payment{
+					CardId:      card.Id,
+					UserId:      order.UserId,
+					Amount:      order.Amount,
+					OrderId:     order.Id,
+					ProductId:   order.ProductId,
+					Status:      "failed",
+					Type:        "-",
+					Reason:      "insufficient funds",
+					Description: order.Description,
 					CreatedAt:   time.Now().String(),
 					UpdatedAt:   time.Now().String(),
 				}
 			}
+		} else if order.Status == "CANCELED" {
+			//do refund
+			update := bson.D{
+				{Key: "$set", Value: bson.D{
+					{Key: "balance", Value: card.Balance + order.Amount},
+				}},
+			}
 
-			_, err = orderyPaymentCollection.InsertOne(context.TODO(), p)
+			// id, _ := bson.ObjectIDFromHex(card.Id)
+			// _, err := ordery.UpdateByID(context.Background(), id, update)
+
+			if !errorCheck {
+				_, err := ordery.UpdateOne(context.Background(), filter, update)
+				if err != nil {
+					log.Println("Payment refund failed")
+					errorCheck = true
+					continue
+				}
+			}
+
+			p = service.Payment{
+				CardId:      card.Id,
+				UserId:      order.UserId,
+				Amount:      order.Amount,
+				OrderId:     order.Id,
+				ProductId:   order.ProductId,
+				Status:      "done",
+				Type:        "refund",
+				Description: order.Description,
+				Reason:      "order canceled",
+				CreatedAt:   time.Now().String(),
+				UpdatedAt:   time.Now().String(),
+			}
+		}
+
+		if !errorCheck {
+
+			p.Id = uuid.NewString()
+			// for duplicate looping an eleiminating 
+			if p.CardId != "" {
+				_, err = orderyPaymentCollection.InsertOne(context.TODO(), p)
+			}
 
 			if err != nil {
 				log.Print("error inserting payment info")
-				return
+				errorCheck = true
+				continue
 			}
 
 			paymentByte, err := json.Marshal(p)
-
 			if err != nil {
 				log.Print("error unwrapping bytes")
-				return
+				continue
 			}
 
+			paymentDataForNotificationService := "QueueType:Payment rabbitmqIfy " + string(paymentByte)
+			g := bytes.NewBufferString(paymentDataForNotificationService)
+			//if error it would just be o bytes
 			ch.PublishWithContext(context.Background(),
 				exchangeName, // exchange
 				exchangeKey,  // routing key
@@ -192,13 +238,14 @@ func Consume(ch *amqp.Channel, mongoClient *mongo.Client) {
 				false,        // immediate
 				amqp.Publishing{
 					ContentType:  "application/json",
-					Body:         paymentByte,
+					Body:         g.Bytes(),
 					DeliveryMode: amqp.Persistent,
 				})
-
 		}
 
-	}()
+	}
+
+	// }()
 }
 
 func FailOnError(err error, msg string) {

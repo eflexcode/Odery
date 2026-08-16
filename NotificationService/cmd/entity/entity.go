@@ -52,5 +52,18 @@ type StandardResponse struct {
 	StatusCode int    `json:"status_code"`
 }
 
-
+type Payment struct {
+	Id          string  `json:"id"`
+	UserId      string  `json:"user_id"`
+	CardId      string  `json:"card_id"`
+	Amount      float64 `json:"amount"`
+	ProductId   string  `json:"product_id"`
+	OrderId     string  `json:"order_id"`
+	Status      string  `json:"status"` //done, processing, submitted, failed
+	Reason      string  `json:"reason"` //eg: insufficient funds, card error, network error,order canceled
+	Type        string  `json:"type"`   //refund,paid,-
+	Description string  `json:"description"`
+	CreatedAt   string  `json:"created_at"`
+	UpdatedAt   string  `json:"updated_at"`
+}
 
