@@ -84,6 +84,16 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    public Order updateStatus(OrderStatus orderStatus, String id) throws NotFoundException {
+        Order order = getById(id);
+        order.setStatus(orderStatus);
+        Date date = new Date();
+        order.setUpdatedAt(date);
+
+        return repository.save(order);
+    }
+
+    @Override
     public Order cancel(String id) throws NotFoundException {
         Order order = getById(id);
 

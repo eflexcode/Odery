@@ -59,6 +59,7 @@ type Payment struct {
 	UserId      string  `json:"user_id"`
 	CardId      string  `json:"card_id"`
 	Amount      float64 `json:"amount"`
+	ItemCount   int64   `json:"item_count"`
 	ProductId   string  `json:"product_id"`
 	OrderId     string  `json:"order_id"`
 	Status      string  `json:"status"` //done, processing, submitted, failed
@@ -412,9 +413,10 @@ func (r *Repo) MakePayment(c *gin.Context) {
 				OrderId:     order.Id,
 				ProductId:   order.ProductId,
 				Status:      "failed",
-				Type:        "_",
+				Type:        "-",
 				Reason:      "insufficient funds",
 				Description: order.Description,
+				ItemCount:   int64(order.Count),
 				CreatedAt:   time.Now().String(),
 				UpdatedAt:   time.Now().String(),
 			}
@@ -429,6 +431,7 @@ func (r *Repo) MakePayment(c *gin.Context) {
 				Type:        "paid",
 				Reason:      "",
 				Description: order.Description,
+				ItemCount:   int64(order.Count),
 				CreatedAt:   time.Now().String(),
 				UpdatedAt:   time.Now().String(),
 			}
@@ -441,13 +444,13 @@ func (r *Repo) MakePayment(c *gin.Context) {
 			OrderId:     order.Id,
 			ProductId:   order.ProductId,
 			Status:      "failed",
-			Type:        "_",
+			Type:        "-",
 			Reason:      "insufficient funds",
 			Description: order.Description,
+			ItemCount:   int64(order.Count),
 			CreatedAt:   time.Now().String(),
 			UpdatedAt:   time.Now().String(),
 		}
-
 	}
 
 	p.Id = uuid.NewString()
@@ -538,7 +541,6 @@ func (r *Repo) GetPaymentSlipts(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, paymentResult)
-
 }
 
 func (r *Repo) GetPaymentSlipt(c *gin.Context) {
@@ -710,10 +712,10 @@ func (r *Repo) RequestRefund(c *gin.Context) {
 
 	// idP, _ := bson.ObjectIDFromHex(payment.Id)
 	// _, err = coll.UpdateByID(c.Copy(), idP, updateP)
-	
+
 	paymentFilter := bson.M{"id": payment.Id}
 	_, err = coll.UpdateOne(c.Copy(), paymentFilter, updateP)
-	
+
 	if err != nil {
 
 		s := StandardResponse{
@@ -745,7 +747,6 @@ func (r *Repo) RequestRefund(c *gin.Context) {
 		Message: "refund made successfully",
 		Status:  http.StatusOK,
 	}
-	
-	c.JSON(http.StatusOK, s)
 
+	c.JSON(http.StatusOK, s)
 }

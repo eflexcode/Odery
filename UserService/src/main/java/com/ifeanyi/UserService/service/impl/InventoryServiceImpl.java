@@ -11,7 +11,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.web.server.handler.ResponseStatusExceptionHandler;
 
 import java.util.Date;
 
@@ -32,6 +31,12 @@ public class InventoryServiceImpl implements InventoryService {
     @Override
     public Inventory get(String id) {
         return inventoryRepository.findById(id).orElseThrow(() ->new ResponseStatusException(HttpStatus.NOT_FOUND,"No inventory found with id:: "+id));
+    }
+
+    @Override
+    public Void del(String id) {
+        inventoryRepository.delete(inventoryRepository.findByOrderId(id));
+        return null;
     }
 
     @Override

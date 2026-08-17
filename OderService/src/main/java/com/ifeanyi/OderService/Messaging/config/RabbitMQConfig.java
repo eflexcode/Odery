@@ -12,17 +12,27 @@ public class RabbitMQConfig {
         return new Queue("order", true);
     }
 
-    @Bean
-    public Exchange exchange() {
-        return new DirectExchange("exchange-order");
+//    @Bean
+//    public Exchange exchange() {
+//        return new DirectExchange("exchange-order");
+//    }
+@Bean
+    public FanoutExchange paymentExchange() {
+        return new FanoutExchange("payment.exchange");
     }
+//
+//     dont listen to your self
+//    @Bean
+//    public Binding binding(Queue queue, Exchange exchange) {
+//        return BindingBuilder.bind(queue)
+//                .to(exchange)
+//                .with("order-routing-key")
+//                .noargs();
+//    }
 
     @Bean
-    public Binding binding(Queue queue, Exchange exchange) {
+    public Binding paymentBinding(Queue queue) {
         return BindingBuilder.bind(queue)
-                .to(exchange)
-                .with("order-routing-key")
-                .noargs();
+                .to(paymentExchange());
     }
-
 }
