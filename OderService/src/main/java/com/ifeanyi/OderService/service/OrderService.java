@@ -13,6 +13,7 @@ public interface OrderService {
     Order create(OrderModel orderModel) throws BadRequestException;
 
     Order update(OrderModel orderModel, String id) throws NotFoundException;
+    Order updateStatus(OrderStatus orderStatus, String id) throws NotFoundException;
 
     Order cancel(String id) throws NotFoundException;
 

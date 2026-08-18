@@ -19,9 +19,15 @@ public class Inventory {
     private String id;
     @JsonProperty("user_id")
     private String userId;
+    @JsonProperty("order_id")
+    private String  orderId;
     @JsonProperty("product_id")
     private String productId;
+    @JsonProperty("count")
+    private int count;
     @JsonProperty("created_at")
     private Date createdAt;
+    @JsonProperty("updated_at")
+    private Date updatedAt;
 
 }

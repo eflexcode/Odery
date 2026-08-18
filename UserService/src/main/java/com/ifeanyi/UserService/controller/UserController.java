@@ -52,18 +52,23 @@ public class UserController {
     }
 
     @PostMapping("inv/add")
-    public ResponseEntity<Inventory> addInventory(@RequestBody InventoryModel inventoryModel){
-      return new ResponseEntity<>(inventoryService.add(inventoryModel),HttpStatus.OK);
+    public ResponseEntity<Inventory> addInventory(@RequestBody InventoryModel inventoryModel) {
+        return new ResponseEntity<>(inventoryService.add(inventoryModel), HttpStatus.OK);
+    }
+
+    @DeleteMapping("inv/del/{order_id}")
+    public ResponseEntity<Void> delInventory(@PathVariable("order_id") String orderId) {
+        return new ResponseEntity<>(inventoryService.del(orderId), HttpStatus.OK);
     }
 
     @PostMapping("inv/get/{id}")
-    public ResponseEntity<Inventory> getInventory(@PathVariable String id){
-        return new ResponseEntity<>(inventoryService.get(id),HttpStatus.OK);
+    public ResponseEntity<Inventory> getInventory(@PathVariable String id) {
+        return new ResponseEntity<>(inventoryService.get(id), HttpStatus.OK);
     }
 
     @PostMapping("inv/get-all/{userId}")
-    public ResponseEntity<Page<Inventory>> getAllUserInventory(@PathVariable String userId, Pageable pageable){
-        return new ResponseEntity<>(inventoryService.getAll(userId,pageable),HttpStatus.OK);
+    public ResponseEntity<Page<Inventory>> getAllUserInventory(@PathVariable String userId, Pageable pageable) {
+        return new ResponseEntity<>(inventoryService.getAll(userId, pageable), HttpStatus.OK);
     }
 
 }

@@ -16,5 +16,7 @@ public class InventoryModel {
     private String userId;
     @JsonProperty("product_id")
     private String productId;
+    @JsonProperty("order_id")
+    private String orderId;
 
 }

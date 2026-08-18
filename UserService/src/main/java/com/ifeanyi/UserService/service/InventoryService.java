@@ -10,6 +10,7 @@ public interface InventoryService {
 
     Inventory add (InventoryModel model);
     Inventory get (String id);
+    Void del (String id);
     Page<Inventory> getAll(String userId, Pageable pageable);
 
 }
