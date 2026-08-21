@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/cmd/config"
 	"github.com/cmd/database"
@@ -11,6 +12,8 @@ import (
 	"github.com/cmd/message"
 	"github.com/cmd/service"
 	"github.com/gin-gonic/gin"
+	"github.com/ArthurHlt/go-eureka-client/eureka"
+
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -138,7 +141,36 @@ func main() {
 			message.Consume(ch, mongoClient)
 		// }
 	}()
+	registerWithEureka()
 
 	r.Run(evn.GetString("PORT", ":8089"))
+
+}
+
+func registerWithEureka() {
+
+	client := eureka.NewClient([]string{evn.GetString("EUREKA_ADDR", "http://localhost:8085/eureka")})
+
+	instance := eureka.NewInstanceInfo(evn.GetString("DISCOVERY_ADDR", "localhost:8089"), evn.GetString("SERVER_NAME", "payment-server"), evn.GetString("IP", "127.0.0.1"), evn.GetInt("PORT", 8089), uint(evn.GetInt("ttl", 30)), false)
+
+	client.RegisterInstance(evn.GetString("SERVER_NAME", "payment-server"), instance)
+
+	go func() {
+
+		for {
+
+			_ = client.SendHeartbeat(instance.App, instance.HostName)
+
+			// if err != nil {
+			// 	log.Print("Error: Eureka heartbeat failed " + err.Error())
+			// } else {
+			// 	log.Print("Info: Eureka heartbeat success")
+			// }
+
+			time.Sleep(time.Second * 100)
+
+		}
+
+	}()
 
 }

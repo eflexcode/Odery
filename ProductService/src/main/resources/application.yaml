@@ -6,3 +6,7 @@ spring:
       uri: mongodb://localhost:27017/OderyProduct
 server:
   port: 8092
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8085/eureka
