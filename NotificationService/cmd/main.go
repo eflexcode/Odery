@@ -15,6 +15,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/rabbitmq/amqp091-go"
+	"github.com/ArthurHlt/go-eureka-client/eureka"
+
 )
 
 func main() {
@@ -199,6 +201,33 @@ func main() {
 
 	r.GET("/get-notifications/:userId", s.GetNotifications)
 	r.GET("/get/:id", s.GetNotification)
-
+	registerWithEureka()
 	r.Run(env.GetString("PORT", ":8084"))
+}
+func registerWithEureka() {
+
+	client := eureka.NewClient([]string{env.GetString("EUREKA_ADDR", "http://localhost:8085/eureka")})
+
+	instance := eureka.NewInstanceInfo(env.GetString("DISCOVERY_ADDR", "localhost:8084"), env.GetString("SERVER_NAME", "notification-server"), env.GetString("IP", "127.0.0.1"), env.GetInt("PORT", 8084), uint(env.GetInt("ttl", 30)), false)
+
+	client.RegisterInstance(env.GetString("SERVER_NAME", "notification-server"), instance)
+
+	go func() {
+
+		for {
+
+			_= client.SendHeartbeat(instance.App, instance.HostName)
+
+			// if err != nil {
+			// 	log.Print("Error: Eureka heartbeat failed " + err.Error())
+			// } else {
+			// 	log.Print("Info: Eureka heartbeat success")
+			// }
+
+			time.Sleep(time.Second * 100)
+
+		}
+
+	}()
+
 }

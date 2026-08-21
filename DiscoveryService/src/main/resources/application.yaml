@@ -1,7 +1,11 @@
 spring:
   application:
     name: DiscoveryService
+server:
+  port: 8085
 eureka:
   client:
-
+    fetch-registry: false
+    register-with-eureka: false
   server:
+    wait-time-in-ms-when-sync-empty: 0
