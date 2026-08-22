@@ -6,6 +6,8 @@ import com.ifeanyi.UserService.repository.InventoryRepository;
 import com.ifeanyi.UserService.service.InventoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -29,10 +31,12 @@ public class InventoryServiceImpl implements InventoryService {
     }
 
     @Override
+    @Cacheable(value = "inventorys",key = "#id")
     public Inventory get(String id) {
         return inventoryRepository.findById(id).orElseThrow(() ->new ResponseStatusException(HttpStatus.NOT_FOUND,"No inventory found with id:: "+id));
     }
 
+    @CacheEvict(value = "inventorys",key = "#id")
     @Override
     public Void del(String id) {
         inventoryRepository.delete(inventoryRepository.findByOrderId(id));
