@@ -14,6 +14,9 @@ import com.ifeanyi.ProductService.util.Util;
 import com.ifeanyi.ProductService.service.impl.OtherServices.User.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.*;
@@ -80,6 +83,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @CachePut (value = "products",key = "#products.id")
     public Product update(String id, ProductModel productModel) throws NotFoundExceptionHandler {
 
         Product product = get(id);
@@ -90,11 +94,13 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Cacheable(value = "products",key = "#id")
     public Product get(String id) throws NotFoundExceptionHandler {
         return repository.findById(id).orElseThrow(() -> new NotFoundExceptionHandler("No product found with id: " + id));
     }
 
     @Override
+    @CacheEvict(value = "products",key = "#id")
     public StandardResponse delete(String id) {
         repository.deleteById(id);
         return new StandardResponse("Product deleted successfully", 200, new Date());
@@ -145,6 +151,5 @@ public class ProductServiceImpl implements ProductService {
 
         return "http://localhost:8092/"+type +"/"+ fileName;
     }
-
 
 }

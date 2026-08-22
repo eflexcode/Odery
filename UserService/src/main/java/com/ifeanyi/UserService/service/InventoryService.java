@@ -2,6 +2,7 @@ package com.ifeanyi.UserService.service;
 
 import com.ifeanyi.UserService.entity.Inventory;
 import com.ifeanyi.UserService.model.InventoryModel;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;

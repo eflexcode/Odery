@@ -9,6 +9,7 @@ import com.ifeanyi.UserService.service.UserService;
 import com.ifeanyi.UserService.service.InventoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;

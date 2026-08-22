@@ -2,6 +2,11 @@ spring:
   application:
     name: ProductService
   data:
+    redis:
+      port: 6379
+      host: localhost
+      cache:
+        type: redis
     mongodb:
       uri: mongodb://localhost:27017/OderyProduct
 server:

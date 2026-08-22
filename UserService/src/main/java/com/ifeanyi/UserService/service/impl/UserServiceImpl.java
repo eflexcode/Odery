@@ -9,6 +9,9 @@ import com.ifeanyi.UserService.service.UserService;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
@@ -42,7 +45,7 @@ public class UserServiceImpl implements UserService {
 
         return userRepository.save(user);
     }
-
+    @CachePut(value = "users",key = "#users.id")
     @Override
     public User update(UserModel userModel,String id) throws NotFoundException {
 
@@ -52,12 +55,12 @@ public class UserServiceImpl implements UserService {
 
         return userRepository.save(user);
     }
-
+    @Cacheable(value = "users",key = "#id")
     @Override
     public User get(String id) throws NotFoundException {
         return userRepository.findById(id).orElseThrow(() -> new NotFoundException("No user found with id: "+id));
     }
-
+    @CacheEvict(value = "users",key = "#id")
     @Override
     public void delete(String id) {
         userRepository.deleteById(id);
