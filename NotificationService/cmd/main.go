@@ -204,6 +204,7 @@ func main() {
 	registerWithEureka()
 	r.Run(env.GetString("PORT", ":8084"))
 }
+
 func registerWithEureka() {
 
 	client := eureka.NewClient([]string{env.GetString("EUREKA_ADDR", "http://localhost:8085/eureka")})

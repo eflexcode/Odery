@@ -62,12 +62,12 @@ public class UserController {
         return new ResponseEntity<>(inventoryService.del(orderId), HttpStatus.OK);
     }
 
-    @PostMapping("inv/get/{id}")
+    @GetMapping("inv/get/{id}")
     public ResponseEntity<Inventory> getInventory(@PathVariable String id) {
         return new ResponseEntity<>(inventoryService.get(id), HttpStatus.OK);
     }
 
-    @PostMapping("inv/get-all/{userId}")
+    @GetMapping("inv/get-all/{userId}")
     public ResponseEntity<Page<Inventory>> getAllUserInventory(@PathVariable String userId, Pageable pageable) {
         return new ResponseEntity<>(inventoryService.getAll(userId, pageable), HttpStatus.OK);
     }

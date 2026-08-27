@@ -25,7 +25,7 @@ User service uses postgres while notification,product,order and payment services
 
 1. Redis
 
-Used in User both Product services
+Used in User and Product services
 
 ### Messaging
 

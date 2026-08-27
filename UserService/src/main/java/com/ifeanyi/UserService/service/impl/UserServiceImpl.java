@@ -8,12 +8,15 @@ import com.ifeanyi.UserService.repository.UserRepository;
 import com.ifeanyi.UserService.service.UserService;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
+import org.bouncycastle.crypto.generators.BCrypt;
 import org.springframework.beans.BeanUtils;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
 import java.util.Date;
 
 @Service
@@ -27,6 +30,8 @@ public class UserServiceImpl implements UserService {
 
         User user = new User();
         BeanUtils.copyProperties(userModel, user);
+        byte[] p = BCrypt.passwordToByteArray(user.getPassword().toCharArray());
+        user.setPassword(Arrays.toString(p));
         user.setCreatedAt(new Date());
         user.setUpdatedAt(new Date());
         user.setRole(Role.USER);
@@ -39,15 +44,19 @@ public class UserServiceImpl implements UserService {
 
         User user = new User();
         BeanUtils.copyProperties(userModel, user);
+
+        byte[] p = BCrypt.passwordToByteArray(user.getPassword().toCharArray());
+        user.setPassword(Arrays.toString(p));
         user.setCreatedAt(new Date());
         user.setUpdatedAt(new Date());
         user.setRole(Role.ADMIN);
 
         return userRepository.save(user);
     }
-    @CachePut(value = "users",key = "#users.id")
+
+    @CachePut(value = "users", key = "#users.id")
     @Override
-    public User update(UserModel userModel,String id) throws NotFoundException {
+    public User update(UserModel userModel, String id) throws NotFoundException {
 
         User user = get(id);
         BeanUtils.copyProperties(userModel, user);
@@ -55,12 +64,14 @@ public class UserServiceImpl implements UserService {
 
         return userRepository.save(user);
     }
-    @Cacheable(value = "users",key = "#id")
+
+    @Cacheable(value = "users", key = "#id")
     @Override
     public User get(String id) throws NotFoundException {
-        return userRepository.findById(id).orElseThrow(() -> new NotFoundException("No user found with id: "+id));
+        return userRepository.findById(id).orElseThrow(() -> new NotFoundException("No user found with id: " + id));
     }
-    @CacheEvict(value = "users",key = "#id")
+
+    @CacheEvict(value = "users", key = "#id")
     @Override
     public void delete(String id) {
         userRepository.deleteById(id);

@@ -56,7 +56,7 @@ func (d *Postgres) Auth(c *gin.Context) {
 		"exp":      time.Now().Add(time.Hour * 200).Unix(),
 	}
 
-	var secret_words string = env.GetString("JWT_KEY", "Arequestforalongtextmessage:SearchresultsshowIfthisisyourintent,pleaseclarifythecontextandwhatyouwantthetexttobeabout.")
+	var secret_words string = env.GetString("JWT_KEY", "ArequestforalongtextmessageSearchresultsshowIfthisisyourintentpleaseclarifythecontextandwhatyouwantthetexttobeabout")
 	claimsToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
 	token, err := claimsToken.SignedString(secret_words)
